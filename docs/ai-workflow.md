@@ -106,3 +106,33 @@ Keputusan R-10/R-11/R-13 kini punya bukti runtime sesuai scope Task 4. Catatan r
 - [ ] Frontend contract sync, browser/E2E dan Task 6 tetap NOT_RUN.
 
 Catatan belum-tersedia/NOT_RUN user management pada Task 4 di atas adalah histori, bukan status terbaru. Tidak mengubah bukti task sebelumnya. Perintah dan batas bukti terbaru ada pada testing.md.
+
+
+## Execution log Task 7 ? Docker deployment lokal dan final review
+
+2026-10-29, diizinkan pengguna untuk kedua repository. Tidak mengembalikan workspaces atau menjalankan Git/GitHub. Bukti Task 2?6 dipertahankan sebagai histori.
+
+- [x] Audit environment; project/database/volume baru untuk deployment tes, existing dipertahankan.
+- [x] Dockerfiles mandiri, npm/Node pinned, lockfile dan Prisma generate offline.
+- [x] PostgreSQL/Redis healthy ? migrate/seed 0 ? API ready ? nginx/web.
+- [x] Same-origin proxy, SPA fallback, cookie/CSRF, trusted gateway tunggal dan port internal.
+- [x] Perbaikan Redis reconnect terbatas/backoff dengan fail-closed tetap berlaku.
+- [x] Linux lint/typecheck/build, Prisma validate/generate, 75 backend + 13 component tests.
+- [x] 10 browser desktop/mobile terhadap runtime Docker; namespace limiter unik tanpa melonggarkan kebijakan.
+- [x] Migration/seed ulang, session/data persistence, outage/recovery dan graceful SIGTERM.
+- [x] Validator OpenAPI, kontrak kedua repository dan review 87 ID; lihat final-review.md.
+- [x] README/testing/deployment notes dan batas bukti diperbarui.
+- [ ] HTTPS publik, browser lain, device fisik, load/fuzz/accessibility audit menyeluruh: NOT_RUN.
+
+Task 7 lokal selesai; bukan persetujuan untuk deploy publik. Requirement dengan bukti parsial dicatat eksplisit pada final-review.md, tidak dianggap PASS penuh. Tidak ada penghapusan database/volume atau metadata Git.
+
+
+## Perbaikan startup development ? 2026-10-29
+
+- [x] npm run dev mandiri tanpa warning workspace; root registration disesuaikan minimal.
+- [x] Backend once-only preparation, safe dev target/override/port checks, existing Compose project dan seed preservation.
+- [x] Vite localhost5175 strictPort/proxy3000, Origin/CSRF tetap ditegakkan.
+- [x] Bersihkan hanya proses Warehouse lama; browser login/reload/logout aktual dan checks lint/typecheck/build/unit/component lulus.
+- [ ] Docker engine dimatikan secara nyata dan full SQL regression ulang: NOT_RUN.
+
+Panduan aktif development.md; bukti/history sebelumnya dipertahankan. Tidak menjalankan Git/GitHub.

@@ -17,3 +17,12 @@ Thumbs.db
 .vite/
 src/generated/prisma/
 docs/source
+
+/docs/*
+!/docs/prd.md
+!/docs/technical-spec.md
+!/docs/erd.mmd
+!/docs/openapi.yaml
+!/docs/data-flow.mmd
+!/docs/ai-workflow.md
+!/docs/testing.md

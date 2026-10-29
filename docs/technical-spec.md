@@ -494,3 +494,20 @@ Urutan target mutation: missing target 404 USER_NOT_FOUND; PATCH deleted target 
 Role/status yang benar-benar berbeda menaikkan authVersion satu kali dalam write yang sama, termasuk bila keduanya berubah sekaligus. Nama saja atau role/status identik tidak menaikkan versi. Delete pertama isActive=false/deletedAt/authVersion+1; delete ulang mempertahankan updatedAt/deletedAt/version. FK historical tetap RESTRICT dan row user tidak dihapus. Keunikan email tetap mencakup deleted. Error unique create dipetakan EMAIL_ALREADY_EXISTS; kegagalan DB/rollback tetap memakai common handler.
 
 List data/count memakai REPEATABLE READ untuk snapshot pagination. Tidak ada schema/migration/dependency baru. Pembuktian lock wait, concurrency, revocation dan rollback ada pada testing.md; production stress/browser bukan cakupan bukti ini.
+
+
+## Keputusan deployment Task 7 sebelum implementasi
+
+Compose deployment terpisah dari Compose dependency lokal, ditempatkan di deploy/compose.yaml backend; checkout frontend dipilih lewat FRONTEND_CONTEXT. Job migrate terpisah menjalankan migration+seed setelah PostgreSQL/Redis healthy; API tidak menjalankan migration per replica. Gateway nginx melayani SPA dan meneruskan /api serta /health tanpa rewrite kontrak. Gateway mempunyai IP internal eksplisit agar TRUST_PROXY hanya mempercayai gateway, dan menimpa forwarded headers dari client. Local HTTP memakai cookie local; TLS production tetap belum diuji.
+
+Redis perlu reconnect setelah outage agar readiness pulih saat dependency kembali. Reconnect dengan backoff hanya menyambungkan ulang client; disableOfflineQueue dan isReady gate tetap menolak request dengan 503 selama outage, tanpa fallback memory/store. Perubahan ini akan diuji dengan stop/start Redis nyata pada deployment terisolasi.
+
+
+### Baseline deployment Task 7 terverifikasi
+
+Dockerfiles/lockfile pada masing-masing root repository; Compose backend deploy/compose.yaml menerima context checkout frontend eksplisit. Node 24.12.0/npm 11.6.2, nginx 1.30.6-alpine, PostgreSQL 17.11, Redis 8.2.11 pinned digest. Migration/seed job terpisah sebelum API; gateway HTTP lokal port internal 8080, API tidak dipublish. TRUST_PROXY hanya alamat gateway statis, DNS nginx diperbarui untuk API recreation; tidak ada automatic mutation retry. Runtime non-root/read-only, secret hanya runtime env. Lihat deployment.md dan testing.md untuk detail dan bukti. OpenAPI/Markdown tidak berubah; reconnect Redis memulihkan koneksi otomatis dengan backoff maksimum 2 detik, disableOfflineQueue/fail-closed tetap berlaku. Tidak menambahkan endpoint atau aturan bisnis. HTTPS production tetap NOT_RUN.
+
+
+### Startup development satu command
+
+Lihat development.md: npm run dev backend memvalidasi env/.env/override, memeriksa port3000 dan Docker, Compose project wrs-development-laptop healthy, Prisma generate, query target lalu migrate deploy/seed sekali sebelum watcher. Vite development localhost5175 strictPort, proxy127.0.0.1:3000 mempertahankan Origin. APP_ORIGIN5175/local cookie non-Secure. Mode test eksplisit mempertahankan alternate fixture proxy. Kontrak API/security tidak berubah. Root workspace registration lama dihapus minimal; dependency dan kedua lockfile aplikasi tetap.

@@ -394,3 +394,124 @@ Warning deprecation pg 8.23.1 dari jalur internal Prisma/adapter yang sudah dica
 | Fresh isolated npm ci atau audit dependency baru Task 5 | NOT_RUN, tidak ada dependency/lockfile baru |
 
 Tidak ada blocker backend yang ditemukan untuk memulai Task 6 setelah instruksi pengguna. Frontend belum dikerjakan dan artefak kontraknya belum dibandingkan. Metadata ketersediaan endpoint kini menyatakan seluruh 20 operasi tersedia; bentuk DTO, security, error/status dan business rules tetap. Sumber backend Markdown/OpenAPI dan manifest telah selaras/divalidasi. Bukti task sebelumnya tidak ditimpa.
+
+
+## Task 7 ? verifikasi Docker lokal
+
+Tanggal: 2026-10-29, Windows Docker Desktop/Linux containers, Chrome desktop dan mobile emulation. Project baru **wrs-task7-3d9e72b6**, database **wrs_task7_3d9e72b6_test**, origin **http://localhost:18080**, env privat **deploy/.env.verification di backend**. Project/volume dicek belum ada sebelum up. Tidak menghapus/mereset data, volume atau container existing. Tidak menjalankan Git/GitHub. Bukti Task 2?6 di atas tetap sejarah, termasuk NOT_RUN pada tanggal/cakupan asal; bukan hasil ulang Task 7.
+
+### Hasil aktual terbaru
+
+| Pemeriksaan / command | Exit | Hasil |
+| --- | --- | --- |
+| Backend npm run lint / typecheck / build pada host; prisma:validate / prisma:generate | 0 | PASS; generate offline dengan Prisma 7.10.1. |
+| Frontend npm run lint / typecheck / build; npm run test:component pada host | 0 | PASS; 13 component tests. Host memakai dependency Windows existing. |
+| docker compose -f deploy/compose.yaml --env-file deploy/.env.verification build | 0 | PASS API + migrate + web; npm ci lock akhir pada Linux; offline Prisma generate/TypeScript/Vite production build. |
+| docker build --target verification untuk kedua checkout | 0 | PASS lint/typecheck Linux dari dependency lock akhir. |
+| Backend Linux vitest run, RUN_FOUNDATION_INTEGRATION=true, PostgreSQL/Redis nyata | 0 | PASS **75/75**, 0 skipped/failed; evidence/task7-tests-linux.json. Termasuk 4 boundary tests baru, jadi hasil ini menggantikan suite host 71 sebelum penambahan tes. |
+| Frontend Linux vitest run | 0 | PASS **13/13**, 0 skipped/failed; evidence/task7-component-linux.json. |
+| docker compose ... up -d --wait pada DB/volume kosong baru | 0 | PASS migrate exit 0 sebelum API start, semua long-running services healthy; evidence/task7-clean-start.json. |
+| node scripts/verify-deployment.mjs deploy/.env.verification dari backend | 0 | PASS **14/14** pemeriksaan; evidence/task7-operational.json. |
+| node node_modules/@playwright/test/cli.js test dari frontend, E2E_RUNTIME=docker | 0 | PASS **10/10**, expected 10/unexpected 0/skipped 0/flaky 0, tanpa retry, 82.09 detik; evidence/task7-browser.json. |
+| OpenAPI validator Python openapi-spec-validator 0.7.2 terhadap kontrak kedua checkout | 0 | PASS; schema-valid, 20 operation; bukti task7-verification.json. |
+| python docs/validation/check-docs.py pada masing-masing checkout; frontend --contract-source menunjuk artifact backend eksplisit | 0 | PASS 87 ID, archive/source hashes, local links, manifest dan 20 operation; task7-documentation-check.json. |
+| Review final 87 ID dan byte equality source/contract pair | 0 | PASS untuk kelengkapan review/konsistensi, bukan PASS seluruh kemungkinan behavior; final-review.md merinci bukti parsial. |
+
+Hasil Linux adalah final untuk lockfile frontend yang diperbaiki. File task7-tests.json (71 host) / task7-component.json (13 host) tetap mempunyai konteks asal; tidak diubah menjadi run Linux. Salinan evidence lintas repo identik, berasal dari aplikasi masing-masing, bukan pengujian baru.
+
+### Cakupan runtime Docker
+
+Gateway menyajikan static JS dan deep route HTML; proxy API/health mempertahankan path. Local HTTP cookie HttpOnly/SameSite=Lax/Path=/ host-only, CSRF dan reload auth berfungsi. Browser menguji supervisor product/user create/detail/update/delete, operator access restriction, receiving 100 ? 40 ? 60 dan inventory/history, replay receipt setelah respons commit hilang, refetch failure setelah commit, dan cache/pending isolation antar-user. Desktop/mobile screenshot terbaru sudah diperiksa: evidence/task7-chrome-desktop.png dan task7-chrome-mobile.png. Chrome mobile emulation bukan perangkat fisik.
+
+Operational script membandingkan fingerprint akun/hash/migration history sebelum-sesudah migrate+seed ulang (nilai hash password tidak dicetak), restart API dengan session lama tetap valid, stop Redis ? live 200/ready dan protected route 503 ? Redis start/pulih otomatis tanpa fallback, stop PostgreSQL ? ready 503 ? start/pulih dengan marker data tetap ada, SIGTERM API ? shutdown completed/exit 0/listener tutup, lalu gateway restart/session tetap valid. Tidak mematikan dependency project lama. Audit log/image history/frontend bundle tidak menemukan nilai secret/session/token aktual dari flow itu. Ini tidak membuktikan semua kombinasi error sudah difuzz. API uid 1000 dan nginx uid 101; hanya web dipublish loopback 18080, DB/Redis/API tidak dipublish.
+
+Fixture Docker merecreate API saja dengan namespace Redis unik per kasus, satu worker, readiness wait berurutan. Rate limiter produksi tidak diubah, tidak memakai FLUSHALL. Sesudah tes, project Task 7 tetap tersedia dengan data tes; tidak dibersihkan dengan penghapusan volume.
+
+### Command rerun
+
+Dari backend, dengan file env khusus project tes baru dan Docker aktif:
+
+```powershell
+docker compose -f deploy/compose.yaml --env-file deploy/.env.verification build
+docker compose -f deploy/compose.yaml --env-file deploy/.env.verification up -d --wait
+node scripts/verify-deployment.mjs deploy/.env.verification
+docker build --target verification -t wrs-backend-check:local .
+# Ganti nama project pada --network dengan project tes yang dipilih.
+docker run --rm --network wrs-task7-3d9e72b6_data --env-file deploy/.env.verification -e NODE_ENV=test -e RUN_FOUNDATION_INTEGRATION=true -e REDIS_NAMESPACE=wrs:test:task7:linux wrs-backend-check:local node node_modules/vitest/vitest.mjs run
+npm run prisma:validate
+npm run prisma:generate
+```
+
+Run aktual Linux menggunakan tag project `wrs-task7-3d9e72b6-backend-check:local` / `wrs-task7-3d9e72b6-frontend-check:local` dan reporter JSON ke /evidence yang dimount dari docs/evidence aplikasi terkait. Tag contoh rerun di atas dapat dipilih sendiri; source stage sama. Jalankan command secara berurutan. Dari frontend:
+
+```powershell
+docker build --target verification -t wrs-frontend-check:local .
+docker run --rm wrs-frontend-check:local node node_modules/vitest/vitest.mjs run
+# Path berikut dipilih pemilik ke checkout backend, bukan asumsi parent otomatis.
+$task7Backend = 'D:\path\to\backend-checkout'
+$task7Values = @{}
+Get-Content -LiteralPath (Join-Path $task7Backend 'deploy/.env.verification') | ForEach-Object {
+    if ($_ -match '^([^#=]+)=(.*)$') { $task7Values[$matches[1]] = $matches[2] }
+}
+$env:E2E_RUNTIME = 'docker'
+$env:E2E_BASE_URL = $task7Values['APP_ORIGIN']
+$env:E2E_COMPOSE_FILE = Join-Path $task7Backend 'deploy/compose.yaml'
+$env:E2E_COMPOSE_ENV = Join-Path $task7Backend 'deploy/.env.verification'
+$env:E2E_COMPOSE_PROJECT = $task7Values['COMPOSE_PROJECT_NAME']
+$env:E2E_SEED_EMAIL = $task7Values['SEED_SUPERVISOR_EMAIL']
+$env:E2E_SEED_PASSWORD = $task7Values['SEED_SUPERVISOR_PASSWORD']
+node node_modules/@playwright/test/cli.js test
+Remove-Item Env:E2E_SEED_PASSWORD
+$task7Values.Clear()
+```
+
+Diperlukan `npm ci` frontend dan Chrome lokal sebelum browser tests. Credential hanya dibaca ke process environment, tidak dicetak. Suite menambah data disposable; gunakan project khusus. Command browser menulis evidence/task7-browser.json; simpan bukti lama dahulu bila ingin mempertahankan setiap run.
+
+Validator docs (stdlib) dijalankan dari masing-masing root `python docs/validation/check-docs.py`; frontend dapat menerima `--contract-source` path absolut folder docs backend. Validator schema menggunakan tool terisolasi, tidak menambah application dependency:
+
+```powershell
+python -m pip install --target .cache/doc-tools -r docs/validation/requirements.txt
+$env:PYTHONPATH = (Resolve-Path .cache/doc-tools).Path
+python -m openapi_spec_validator docs/openapi.yaml
+```
+
+Actual Task 7 memakai cache validator backend untuk memvalidasi kedua artifact dengan path eksplisit. Tidak mengasumsikan cache backend tersedia di repository frontend mandiri; command instalasi di atas berlaku lokal masing-masing.
+
+### Riwayat masalah dan perbaikan Task 7
+
+- Docker npm ci frontend pertama benar-benar gagal EUSAGE: metadata optional bundled Tailwind oxide-wasm32-wasi tidak lengkap, missing @emnapi/wasi-threads 1.2.3. Repair package-lock-only biasa tidak menyelesaikannya. Satu percobaan copy lock dari cwd salah gagal FileNotFound dan build ulang masih memakai lock lama; ini masalah tooling/path, bukan kegagalan business tests.
+- Lock dibuat ulang dari manifest exact pada Linux Node 24.12.0/npm 11.6.2. Dry-run lalu Docker npm ci/build dan verification suite Linux final lulus. Tidak mengubah direct dependency, tidak memakai force/legacy-peer-deps. Detail path transitive/hoisting di evidence/task7-lock-repair.json.
+- Base image slim diperiksa dan belum memiliki OpenSSL/libssl; ditambahkan openssl/ca-certificates sebelum deployment. Ini tindakan persiapan, bukan klaim migration pernah gagal.
+- Redis reconnectStrategy=false sebelumnya tidak memulihkan koneksi otomatis. Keputusan dicatat sebelum perubahan; backoff maksimum 2 detik, connect timeout 3 detik, disableOfflineQueue dan dependency readiness/fail-closed dipertahankan. Stop/start Redis nyata kemudian lulus.
+- Warning pg 8.23.1 query-in-flight internal Prisma adapter serta Vite Zod PURE annotation/chunk JS sekitar 651 kB tetap terlihat. Tidak disembunyikan atau dinyatakan selesai; build/test lulus, SLA performance tidak diuji.
+- Perintah yang tidak dieksekusi karena approval timeout pada Task 6 tetap NOT_RUN, bukan tes gagal atau PASS Task 7. Docker browser Task 7 menghasilkan report lengkap; proses lama sudah selesai sebelum pencatatan final, tidak dijalankan bertumpuk.
+
+### NOT_RUN / keterbatasan terbaru
+
+HTTPS/TLS/cookie browser HTTPS, VPS/domain/public hosting, Firefox/WebKit/Safari, device mobile fisik, production load/stress/performance SLA, exhaustive fuzzing dan accessibility audit menyeluruh: **NOT_RUN**. Tiga requirement mempunyai bukti parsial pada final-review.md; tidak dinyatakan PASS menyeluruh. Ini tidak menghalangi penyelesaian deployment Docker lokal, tetapi bukan clearance production publik. Tidak mengubah PROJECT_SPEC.md, applied migrations, prior task evidence atau metadata Git.
+
+Pemeriksaan integritas review tambahan: `python docs/validation/check-final-review.py` pada kedua repository, exit 0, PASS 87 ID unik; 78 VERIFIED + 6 VERIFIED_STATIC + 3 IMPLEMENTED_PARTIALLY_VERIFIED. Memeriksa report 75/13/10/14 dan hash source; tidak menjalankan ulang tes aplikasi. Bukti: evidence/task7-review-check.json dan ringkasan evidence/task7-verification.json.
+
+
+## Development laptop ? 2026-10-29
+
+Environment baru backend env/.env; project wrs-development-laptop, database warehouse_development (bukan _test), Redis namespace wrs:dev:laptop, port PG55450/Redis56400. Existing env files dipastikan tidak berubah. Database baru terbukti 0 tabel sebelum migration/seed; keduanya exit 0. Secret acak hanya file ignored. Backend npm dev tsx watch port3000 dan Vite npm dev port5174 berhasil startup, tetap RUNNING. Command final memakai npx --workspaces=false --yes --package=npm@11.6.2 npm --workspaces=false; parent workspace tidak diubah. Detail command dan akun seed lokal pada README bagian Development laptop.
+
+Chrome real browser smoke: backend ready 200, proxy ready 200, supervisor login/reload/logout dan operator login/reload/logout PASS, cookie HttpOnly true/Secure false. Report docs/evidence/development-verification.json berasal dari frontend browser runner; backend menyimpan salinan identik. Tidak menulis credential, cookie atau token ke report.
+
+Percobaan awal npm offline tidak dieksekusi karena ENOTCACHED (tool preparation, bukan kegagalan aplikasi); npm pinned kemudian tersedia melalui npx online. Get-NetTCPConnection ditolak sandbox, port diperiksa melalui netstat/Docker listing. Command dengan hanya inner --workspaces=false masih warning; kedua flags menghilangkannya. Tidak mengubah parent, dependency aplikasi, schema, database/volume/container existing atau Git metadata. Full regression lint/typecheck/build/unit/E2E suite ulang: NOT_RUN untuk perubahan env/docs ini; bukti Task 7 tetap berlaku pada konteks sebelumnya, bukan diklaim run baru.
+
+Checker dokumentasi dijalankan ulang: python docs/validation/check-docs.py pada masing-masing repository (frontend dengan --contract-source backend docs eksplisit), exit 0 PASS 87 ID/20 operasi/archive dan contract hashes. Rule checker disesuaikan agar menerima --workspaces=false yang menonaktifkan workspace; perintah yang bergantung workspace tetap ditolak. Bukti Task 7 tersimpan terpisah, tidak ditimpa.
+
+
+## Startup development satu command ? 2026-10-29
+
+Panduan aktif development.md. Kedua npm run dev baru berhasil tanpa flag/workspace warning: backend sekali setup Docker/migrate/seed lalu watcher3000, frontend localhost5175 strictPort proxy127.0.0.1:3000. Proses lama yang telah dipastikan milik Warehouse dihentikan: PID16396/26852(Vite),26940(watcher). Tidak menghentikan portfolio atau container/runtime Task7.
+
+PASS lint/typecheck/build kedua aplikasi (exit0), backend19 unit tests termasuk3 development guards dan frontend13 components. Browser Chrome supervisor/operator: me401 sebelum login, bootstrap CSRF200, login200 dengan Origin5175, me200, reload tetap login, logout lalu me401, nol API500. Negative HTTP: missingCSRF403/wrongOrigin403. Negative startup (expected exit1): backend port3000 occupied, frontend5175 occupied, inherited REDIS_NAMESPACE tes dan API_PROXY_TARGET3306 ditolak. Source touch restart API tanpa mengulang setup.
+
+Percobaan awal frontend build dan backend Vitest gagal startup tool akibat spawn EPERM sandbox, belum menjalankan assertions; rerun dengan izin subprocess yang sesuai PASS. Warning Zod PURE dan chunk651kB tetap existing, bukan disembunyikan. npm global10.4.0 berhasil dispatch npm run dev, baseline packageManager/lock11.6.2 tidak berubah. Environment credential existing dipertahankan; origin saja diselaraskan5175. Root workspaces registration dilepas minimal agar plain npm membaca config repository; root aggregate scripts memakai --prefix.
+
+Bukti baru development-startup-browser.json, development-startup-security.json dan backend development-startup-unit.json; bukti development-verification/Task2?7 lama tetap disimpan. Negative Docker engine mati/dependency awal berhenti, full SQL integration/concurrency ulang, Firefox/WebKit/device fisik NOT_RUN. Test security/browser menggunakan database development hanya untuk login/session, tidak menjalankan destructive fixture atau full integration suite di sana.
+
+Final checks: IPv4/IPv6 backend socket entries share one API PID26748; Vite PID12160 binds ::1:5175 (localhost). No5173/5174 listeners. Final HTTP /200, /health/ready200, /api/v1/auth/me401. python docs/validation/check-docs.py both exit0 PASS87 IDs/20 ops/contracts/archive; frontend compared explicit backend artifact. Aggregate evidence development-startup-verification.json, watcher source restart verified without preparation repeat. Runtime Task7 remains healthy.
