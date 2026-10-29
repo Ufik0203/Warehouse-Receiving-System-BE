@@ -24,6 +24,13 @@ describe('environment safety', () => {
     expect(config.SESSION_COOKIE_SECURE).toBe(false);
     expect(config.SESSION_ABSOLUTE_SECONDS).toBe(28800);
   });
+  it('accepts explicit proxy networks and rejects broad or malformed proxy configuration', () => {
+    expect(parseEnvironment({ ...valid, TRUST_PROXY: 'loopback,10.1.0.0/16,::1/128' }).TRUST_PROXY).toContain('loopback');
+    for (const proxy of ['true', '1', '10.1.0.0/99', '10.1.0.0/24/extra']) {
+      expect(() => parseEnvironment({ ...valid, TRUST_PROXY: proxy })).toThrow('TRUST_PROXY');
+    }
+    expect(() => parseEnvironment({ ...valid, REDIS_NAMESPACE: 'invalid namespace' })).toThrow('REDIS_NAMESPACE');
+  });
 });
 
 describe('seed input', () => {

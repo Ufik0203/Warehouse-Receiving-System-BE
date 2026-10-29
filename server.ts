@@ -20,7 +20,7 @@ export async function startServer(environment: Environment) {
     await Promise.allSettled([prisma.$disconnect(), redis.isOpen ? redis.close() : Promise.resolve()]);
     throw new Error('Startup failed: PostgreSQL schema or Redis is unavailable.');
   }
-  const server = createServer(createApp({ checkReadiness: readiness }));
+  const server = createServer(createApp({ checkReadiness: readiness, security: { environment, prisma, redis } }));
   let stopping = false;
   async function shutdown(exitCode = 0): Promise<void> {
     if (stopping) return;

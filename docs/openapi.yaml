@@ -2,8 +2,8 @@ openapi: 3.0.3
 info:
   title: Warehouse Receiving System API
   version: 0.1.0
-  description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Only foundation health endpoints are currently implemented;
-    authentication and business endpoints remain planned. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
+  description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Foundation health and four authentication endpoints are implemented;
+    business endpoints remain planned. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
     text length units remain open; OpenAPI maxLength describes normalized character limits, backend decision pending.
     Mutations require trusted Origin or Referer, Content-Type application/json even without a body, and session-bound
     CSRF including login. Dependency failures fail closed with 503. See technical-spec.md for session lifetimes

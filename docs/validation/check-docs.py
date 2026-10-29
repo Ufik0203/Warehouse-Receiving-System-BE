@@ -14,7 +14,7 @@ parser.add_argument('--contract-source', type=Path, help='Optional explicit back
 args = parser.parse_args()
 report_path = DOCS / 'evidence/documentation-check.json'
 report_path.parent.mkdir(parents=True, exist_ok=True)
-report = {'date': '2026-10-29', 'scope': 'Static documentation only; application/runtime tests NOT_RUN; Task 3 NOT_STARTED', 'status': 'RUNNING'}
+report = {'date': '2026-10-29', 'scope': 'Static documentation only; this command does not run application/runtime tests; see testing.md for Task 3 evidence', 'status': 'RUNNING'}
 report_path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
 
 def digest(path):
@@ -76,4 +76,4 @@ except Exception as error:
 finally:
     report_path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
 print(f'PASS: 87 requirements, {len(files)} active Markdown files, {links} repository-local links, {len(manifest["files"])} archive hashes, contract hashes and 20 API operations.')
-print('Application/schema-validator/runtime tests: NOT_RUN. No Git/GitHub/network commands; Task 3 NOT_STARTED.')
+print('Application/schema-validator/runtime tests: NOT_RUN by this static command. See testing.md for separate executions. No Git/GitHub/network commands.')

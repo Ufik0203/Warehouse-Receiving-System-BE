@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { loadEnvironmentFile } from './load-env.js';
+import { isIP } from 'node:net';
 
 const positiveSeconds = z.coerce.number().int().positive();
 function hasProtocol(value: string, protocols: string[]): boolean {
@@ -24,7 +25,17 @@ export const environmentSchema = z.object({
   SESSION_COOKIE_SECURE: z.enum(['true', 'false']).transform(value => value === 'true'),
   SESSION_IDLE_SECONDS: positiveSeconds.default(1800),
   SESSION_ABSOLUTE_SECONDS: positiveSeconds.default(28800),
-  ANONYMOUS_SESSION_SECONDS: positiveSeconds.default(900)
+  ANONYMOUS_SESSION_SECONDS: positiveSeconds.default(900),
+  REDIS_NAMESPACE: z.string().regex(/^[A-Za-z0-9:_-]+$/).max(80).default('wrs'),
+  TRUST_PROXY: z.string().default('').refine(value => value === '' || value.split(',').every(raw => {
+    const entry = raw.trim();
+    if (entry === 'loopback') return true;
+    const parts = entry.split('/');
+    if (parts.length > 2) return false;
+    const [address, bits] = parts;
+    const family = isIP(address ?? '');
+    return family !== 0 && (bits === undefined || (/^\d+$/.test(bits) && Number(bits) <= (family === 4 ? 32 : 128)));
+  }), 'Use explicit trusted proxy IP/CIDR values or loopback, not true or an arbitrary hop count')
 }).superRefine((value, context) => {
   if (value.SESSION_IDLE_SECONDS > value.SESSION_ABSOLUTE_SECONDS) context.addIssue({ code: 'custom', path: ['SESSION_IDLE_SECONDS'], message: 'Must not exceed absolute lifetime' });
   if (value.DEPLOYMENT_MODE === 'https' && (!value.SESSION_COOKIE_SECURE || !value.APP_ORIGIN.startsWith('https://'))) context.addIssue({ code: 'custom', path: ['DEPLOYMENT_MODE'], message: 'HTTPS requires secure cookies and an HTTPS origin' });

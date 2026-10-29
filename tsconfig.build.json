@@ -6,6 +6,8 @@
     "tests",
     "prisma.config.ts",
     "prisma/seeds",
-    "scripts"
+    "scripts",
+    "vitest.config.ts",
+    "prisma.generate.config.ts"
   ]
 }

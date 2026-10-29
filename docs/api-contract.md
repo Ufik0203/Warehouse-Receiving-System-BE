@@ -1,6 +1,6 @@
 # API Contract
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2 telah diimplementasikan; autentikasi dan fitur bisnis belum tersedia. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Health dan empat endpoint autentikasi Task 3 telah diimplementasikan; endpoint bisnis masih rencana. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
 
 Sumber utama kontrak bersama adalah dokumen ini dalam repository backend. Frontend menyimpan replika byte-identik; prosedur dan pemeriksaan sinkronisasi ada di [api-sync.md](api-sync.md). Perubahan semantik harus ditetapkan di backend terlebih dahulu.
 

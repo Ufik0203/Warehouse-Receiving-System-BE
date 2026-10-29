@@ -1,6 +1,6 @@
 # Technical Specification
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2 telah diimplementasikan; autentikasi dan fitur bisnis belum tersedia. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2 dan autentikasi/security Task 3 telah diimplementasikan; fitur bisnis belum tersedia. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
 
 ## Baseline teknologi
 
@@ -199,6 +199,7 @@ interface SessionData {
   userId?: string;
   authVersion?: number;
   authenticatedAt?: number;
+  lastActivityAt?: number;
   anonymousCreatedAt?: number;
   csrfToken?: string;
 }
@@ -443,6 +444,16 @@ Frontend adalah aplikasi terpisah melalui HTTP; tidak mengimpor Prisma Client da
 - Deployment memakai migrate deploy, development memakai migrate dev. Jangan db push sebagai deployment atau mengubah applied migration.
 - Seluruh CHECK dan composite FK sudah ada pada initial migration; pertahankan bytes semua migrasi. Cardinality child/balance serta invariant status/ledger ditegakkan service yang direncanakan, bukan mengarang trigger baru.
 - Compose lokal hanya postgres/redis; API Dockerfile, migration job deployment dan public deployment belum selesai. Jangan menghapus database atau volume existing untuk membuat tes lulus.
-- Baru health/fondasi tersedia; auth dan seluruh business endpoints belum ada. Task 3 belum dimulai.
+- Health/fondasi dan empat endpoint auth tersedia sejak Task 3; seluruh business endpoints belum ada.
 - R-10 kode error bisnis/not-found, R-11 unit panjang API non-password, R-13 pilihan query snapshot masih terbuka sebelum implementasi terkait; lihat [spec-review.md](spec-review.md). Jangan mengarang keputusan stakeholder.
 - Semua pekerjaan Git/GitHub hanya manual pengguna; agent tidak menjalankan perintah Git atau tool GitHub.
+
+
+## Detail implementasi Task 3
+
+- src/routes menyusun Redis readiness gate, global limiter, express-session, pemeriksaan CSRF dan JSON strict 64 KiB, lalu auth router. Health berada di luar pipeline session agar liveness tetap bekerja ketika Redis gagal.
+- common/cache menggunakan connect-redis dan rate-limit-redis, namespace env default wrs. Rate limits default global 300/menit/IP, login 10/15 menit/IP dan 5/15 menit/IP+email ternormalisasi, protected user 120/menit. Key email memakai SHA256; IP menggunakan ipKeyGenerator dari versi yang sudah diperbaiki. Store error 503; limit 429 dengan Retry-After.
+- Session menyimpan lastActivityAt selain identitas minimum. TTL memakai minimum sisa idle/absolute, anonymous dibatasi waktu pembuatannya; cookie maxAge dibatasi sisa yang sama. TTL Redis menggunakan resolusi detik, deadline aplikasi diperiksa dalam milidetik.
+- TRUST_PROXY default false, konfigurasi env berupa daftar IP/CIDR atau loopback, bukan boolean true/hop count. HTTPS menolak request yang tidak teridentifikasi secure oleh proxy terpercaya.
+- Semua auth response termasuk error no-store. Error body tidak menyertakan detail dependency, input, hash, SID atau token; requestId dibuat server. Password Argon2id dan dummy verification untuk akun tidak ditemukan.
+- Authorization role disediakan sebagai middleware dan diuji melalui route khusus test, tidak menerbitkan endpoint bisnis. Reload role/status/authVersion berlaku pada setiap protected request; perubahan account melalui API tetap scope Task 5.

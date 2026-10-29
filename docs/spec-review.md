@@ -64,4 +64,14 @@ R-14 kini memiliki bukti aktual untuk dependency fondasi, adapter PostgreSQL, Re
 
 ## Status pada repository mandiri
 
-Dokumen ini mempertahankan review sumber, bukan implementasi baru. R-10/R-11/R-13 masih perlu keputusan sebelum endpoint/validator bisnis terkait. Semua file aktif dirujuk relatif terhadap repository ini; catatan path/workflow proyek gabungan adalah konteks historis. Task 3 belum dimulai dan semua operasi Git/GitHub hanya manual pengguna. Lihat [workflow aktif](ai-workflow.md).
+Dokumen ini mempertahankan review sumber. R-10/R-11/R-13 masih perlu keputusan sebelum endpoint/validator bisnis terkait. Semua file aktif dirujuk relatif terhadap repository ini; catatan path/workflow proyek gabungan adalah konteks historis. Task 3 sudah diimplementasikan sesuai tindak lanjut di bawah; semua operasi Git/GitHub hanya manual pengguna. Lihat [workflow aktif](ai-workflow.md).
+
+## Keputusan teknis Task 3 — 2026-10-29
+
+- Tidak ada pertanyaan bisnis terbuka yang memblokir auth. Password dihitung dalam Unicode code point, tidak di-trim; email dinormalisasi trim/lowercase dan dibatasi 254 sesuai kontrak. R-10/R-11/R-13 tetap terbuka untuk Task 4/5.
+- Redis namespace default `wrs` mempertahankan prefix desain. `REDIS_NAMESPACE` yang terpisah wajib untuk tes; tidak ada FLUSHALL atau fallback memory. Tambahan `lastActivityAt` hanya state server untuk enforcement idle, tidak masuk DTO.
+- `TRUST_PROXY` default kosong/false; hanya IP/CIDR eksplisit atau loopback yang diterima. Deployment HTTPS memerlukan hop/proxy yang benar-benar dipercaya dan Secure cookie; header forwarded dari proxy tidak dipercaya ditolak.
+- Session baru disimpan sebelum bootstrap/login response; protected request memuat ulang PostgreSQL dan menyimpan aktivitas sebelum handler. Logout menunggu destroy; kegagalan store menghasilkan 503, bukan sukses palsu.
+- express-rate-limit 8.7.1 menggantikan rencana 8.1.0: audit mengidentifikasi bypass IPv4-mapped IPv6 dan dependency ip-address rentan pada versi lama. Patch dalam major 8 mempertahankan API; audit setelah perubahan melaporkan 0 vulnerability.
+- Kontrak hanya berubah pada metadata ketersediaan health/auth; bentuk endpoint, DTO, status dan security requirement tidak berubah. Frontend tidak diubah/dibandingkan pada task ini; pasangan kontrak dan manifest baru perlu disalin manual sesuai api-sync.md.
+- R-14 kompatibilitas runtime Express 5/session/CSRF/limiter telah diuji pada Windows dengan PostgreSQL/Redis nyata; production Linux/nginx dan TLS browser tetap NOT_RUN.

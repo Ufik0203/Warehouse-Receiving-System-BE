@@ -18,3 +18,8 @@ Unit/integration/runtime/database tests tidak diulang pada tahap ini: **NOT_RUN*
 ## Bukti asal tersedia lokal
 
 Dokumentasi dan evidence proyek sumber kini ikut disertakan sebagai [arsip testing asli](history/combined/docs/testing.md) serta [manifest provenance](history/manifest.json). Tidak perlu folder induk untuk membaca bukti lama. Penyalinan ini bukan eksekusi ulang command di atas; status aslinya dipertahankan. Scope/status terbaru dan pemeriksaan dokumentasi ada pada [testing.md](testing.md).
+
+
+## Tindak lanjut Task 3
+
+Bukti di atas tetap snapshot sebelum Task 3. Hasil backend terbaru dicatat terpisah pada [testing.md](testing.md#bukti-aktual-task-3) dan [laporan Vitest](evidence/task3-tests.json). Bukan eksekusi ulang isolated ci tahap persiapan repository.

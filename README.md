@@ -1,6 +1,6 @@
 # Warehouse Receiving System — Backend
 
-Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Autentikasi/endpoint bisnis belum diimplementasikan; Task 3 belum dimulai. Endpoint saat ini hanya `GET /health/live` dan `GET /health/ready`.
+Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Endpoint bisnis belum diimplementasikan.
 
 Seluruh file untuk instalasi dan build berada dalam repository ini. Tidak memerlukan package.json, node_modules, konfigurasi atau lockfile dari folder induk/frontend. Folder ini boleh disalin sebagai root repository tersendiri. Dokumentasi mandiri tersedia pada docs/; provenance dan arsip lokal mempertahankan dokumen proyek asal. Tidak perlu mengakses folder induk untuk membaca spesifikasi atau menjalankan command fondasi.
 
@@ -89,3 +89,14 @@ API backend adalah sumber utama; frontend menyimpan salinan identik. Pemeriksaan
 ```powershell
 python docs/validation/check-docs.py
 ```
+
+
+## Autentikasi Task 3
+
+Bootstrap token melalui GET /api/v1/auth/csrf-token; simpan cookie dan token, kemudian kirim login dengan JSON email/password, Origin sesuai APP_ORIGIN dan X-CSRF-Token. Token baru dikembalikan sesudah login; gunakan untuk logout dan mutation selanjutnya. Logout tidak memiliki body, tetapi tetap wajib Content-Type application/json, cookie, trusted Origin/Referer dan CSRF. Semua auth response memakai Cache-Control: no-store.
+
+REDIS_NAMESPACE default wrs; gunakan namespace wrs:test:<identitas> untuk tes. TRUST_PROXY kosong berarti tidak mempercayai proxy. Pada HTTPS, isi daftar IP/CIDR proxy sebenarnya; loopback hanya sesuai proxy lokal. Jangan memakai true atau hop count arbitrer. Cookie HTTP lokal wrs.sid; HTTPS __Host-wrs.sid (Secure, HttpOnly, SameSite=Lax, Path=/, tanpa Domain). Session anonymous 15 menit, idle 30 menit dan absolute 8 jam. Dependency error 503 tidak boleh diperlakukan sebagai password salah.
+
+Untuk auth integration, env terisolasi harus mempunyai database _test, REDIS_NAMESPACE wrs:test:..., RUN_FOUNDATION_INTEGRATION=true serta kedua credential seed. Jalankan deploy, seed dan npm run test:integration pada database verifikasi khusus. Jangan menjalankan verify:database ulang pada schema yang sudah terisi. Suite auth menggunakan namespace unik per test, tidak FLUSHALL. Vitest dijalankan serial antar-file karena fixture akun fondasi dipakai bersama.
+
+Bukti Task 3 ada di [testing](docs/testing.md#bukti-aktual-task-3). Kontrak backend diperbarui metadata implementasinya; replika frontend dan contract-version.json perlu disinkronkan manual sesuai [api-sync](docs/api-sync.md). Tidak ada endpoint bisnis atau perubahan frontend pada Task 3.
