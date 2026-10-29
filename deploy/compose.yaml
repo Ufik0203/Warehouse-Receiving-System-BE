@@ -1,0 +1,115 @@
+name: ${COMPOSE_PROJECT_NAME:-wrs-local}
+
+services:
+  postgres:
+    image: postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8.2.11-bookworm@sha256:99ffb973380cc2f47bca06bd094f7f8c7138a0879a63cb8939896a22b7a65bba
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        escaped=$$(printf '%s' "$$REDIS_PASSWORD" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        printf 'requirepass "%s"\nappendonly yes\n' "$$escaped" > /tmp/wrs-redis.conf
+        exec redis-server /tmp/wrs-redis.conf
+    volumes:
+      - redis_data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    image: ${COMPOSE_PROJECT_NAME:-wrs-local}-migrate:local
+    build:
+      context: ..
+      target: migrate
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Use internal postgres hostname}
+      SEED_SUPERVISOR_NAME: ${SEED_SUPERVISOR_NAME:?Set seed name}
+      SEED_SUPERVISOR_EMAIL: ${SEED_SUPERVISOR_EMAIL:?Set seed email}
+      SEED_SUPERVISOR_PASSWORD: ${SEED_SUPERVISOR_PASSWORD:?Set seed password}
+      SEED_OPERATOR_NAME: ${SEED_OPERATOR_NAME:?Set seed name}
+      SEED_OPERATOR_EMAIL: ${SEED_OPERATOR_EMAIL:?Set seed email}
+      SEED_OPERATOR_PASSWORD: ${SEED_OPERATOR_PASSWORD:?Set seed password}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [data]
+    init: true
+    restart: "no"
+
+  api:
+    image: ${COMPOSE_PROJECT_NAME:-wrs-local}-api:local
+    build:
+      context: ..
+      target: runtime
+    environment:
+      NODE_ENV: production
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-local}
+      PORT: "3000"
+      APP_ORIGIN: ${APP_ORIGIN:?Set exact browser origin}
+      DATABASE_URL: ${DATABASE_URL:?Use internal postgres hostname}
+      REDIS_URL: ${REDIS_URL:?Use internal redis hostname}
+      REDIS_NAMESPACE: ${REDIS_NAMESPACE:-wrs}
+      SESSION_SECRET: ${SESSION_SECRET:?Set session signing secret}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      TRUST_PROXY: ${GATEWAY_IP:-172.29.70.10}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    networks: [app, data]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    stop_grace_period: 15s
+    restart: unless-stopped
+
+  web:
+    image: ${COMPOSE_PROJECT_NAME:-wrs-local}-web:local
+    build:
+      context: ${FRONTEND_CONTEXT:?Set FRONTEND_CONTEXT to independent frontend checkout}
+      target: runtime
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    depends_on:
+      api: {condition: service_healthy}
+    networks:
+      app:
+        ipv4_address: ${GATEWAY_IP:-172.29.70.10}
+    read_only: true
+    tmpfs: [/tmp]
+    stop_grace_period: 15s
+    restart: unless-stopped
+
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: ${APP_SUBNET:-172.29.70.0/24}
+  data:
+    internal: true
+volumes:
+  postgres_data:
+  redis_data:

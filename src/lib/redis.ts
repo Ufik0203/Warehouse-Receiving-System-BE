@@ -1,7 +1,10 @@
 import { createClient } from 'redis';
 
 export function createRedis(redisUrl: string) {
-  const client = createClient({ url: redisUrl, disableOfflineQueue: true, socket: { connectTimeout: 3000, reconnectStrategy: false } });
+  const client = createClient({ url: redisUrl, disableOfflineQueue: true, socket: {
+    connectTimeout: 3000,
+    reconnectStrategy: retries => Math.min(100 * 2 ** Math.min(retries, 5), 2000)
+  } });
   // Required error listener. Deliberately exclude connection/error objects from logs.
   client.on('error', () => console.error('Redis connection unavailable.'));
   return client;

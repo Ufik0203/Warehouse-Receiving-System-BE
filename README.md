@@ -1,135 +1,241 @@
-# Warehouse Receiving System — Backend
+# Warehouse Receiving System - Backend
 
-Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Task 4 core receiving tersedia: GET/POST /api/v1/products, GET /api/v1/products/:id, GET/POST /api/v1/receivings, GET /api/v1/receivings/:id, POST /api/v1/receivings/:id/receipts, GET /api/v1/inventory dan GET /api/v1/inventory/transactions. Task 5 user management tersedia: GET/POST /api/v1/users serta GET/PATCH/DELETE /api/v1/users/:id, seluruhnya supervisor-only.
+API penerimaan gudang: session authentication/CSRF, supervisor-managed users, produk, receiving partial/full, inventory dan ledger transaksi. OPERATOR dan SUPERVISOR dapat membuat/menerima receiving serta melihat stok/history; hanya SUPERVISOR membuat produk dan mengelola user. Contoh expected 100 diterima 40 lalu60 menghasilkan PARTIAL lalu COMPLETED, stok 100. Receipt memakai transaksi PostgreSQL dan idempotency UUID agar retry tidak menggandakan stok.
 
-Seluruh file untuk instalasi dan build berada dalam repository ini. Tidak memerlukan package.json, node_modules, konfigurasi atau lockfile dari folder induk/frontend. Folder ini boleh disalin sebagai root repository tersendiri. Dokumentasi mandiri tersedia pada docs/; provenance dan arsip lokal mempertahankan dokumen proyek asal. Tidak perlu mengakses folder induk untuk membaca spesifikasi atau menjalankan command fondasi.
+Stack: Express 5.3.0, TypeScript 5.9.3 strict, Prisma CLI/Client/adapter7.10.1, PostgreSQL 17.11, Redis 8.2.11. app.ts terpisah dari server.ts; route/controller/service/repository/mapper memisahkan HTTP, aturan bisnis, transaksi, database dan DTO aman.
 
-## Install dan build
+Repository pasangan: **Warehouse-Receiving-System-FE**. URL GitHub pasangan belum tercantum dalam metadata/dokumen yang tersedia saat penulisan; tidak ditebak. OpenAPI backend adalah sumber utama kontrak; konsumen frontend harus memakai kontrak yang sama.
 
-Dari root repository backend:
+## Hubungan dua repository
 
-```powershell
-npx --yes --offline=false --package=npm@11.6.2 npm ci --offline=false
-npm run lint
-npm run prisma:validate
-npm run typecheck
-npm run build
-npm run test:unit
+Kedua aplikasi memiliki package.json, package-lock.json, node_modules, konfigurasi dan Dockerfile masing-masing. Tidak membutuhkan npm workspaces atau konfigurasi parent. Untuk full application, siapkan kedua checkout; nama folder bebas. Contoh layout yang cocok dengan default build context Compose:
+
+```text
+workspace/
+  backend/    # checkout Warehouse-Receiving-System-BE
+  frontend/   # checkout Warehouse-Receiving-System-FE
 ```
 
-Jika npm 11.6.2 sudah tersedia, `npm ci` dapat dipakai langsung. Versi exact dependency ada pada package.json dan package-lock.json. Semua command di bawah dijalankan dari root repository ini.
+Compose full deployment berada di checkout backend, `deploy/compose.yaml`. Backend context `..` dihitung dari folder deploy; FRONTEND_CONTEXT default `../../frontend` menunjuk sibling frontend. Jika memakai nama folder lain, isi FRONTEND_CONTEXT dengan path relatif dari folder deploy atau path absolut root checkout frontend. Install/build frontend sendiri tidak memerlukan checkout backend; integrasi runtime dan full deployment memerlukannya.
 
-`prisma:validate` dan `prisma:generate` memakai prisma.generate.config.ts, yang tidak memerlukan DATABASE_URL, secret, PostgreSQL atau Redis. `typecheck` dan `build` menghasilkan Prisma Client terlebih dahulu, sehingga clone baru tidak memerlukan generated files yang di-commit. Generated client berada di src/generated/prisma dan tidak boleh diedit manual.
+## Setup dari checkout bersih
 
-## Konfigurasi lokal dan menjalankan server
+Prasyarat: **Node.js 24.12.0**, **npm 11.6.2** (engines Node>=24.12.0 <25 dan npm>=11.6.2 <12), Docker Desktop/Engine Linux containers serta Docker Compose v2 yang mendukung --wait/health dependencies. Contoh command menggunakan **PowerShell**. Docker tidak diperlukan untuk generate/typecheck/build/unit, tetapi diperlukan untuk dependency development dan pengujian integrasi contoh ini.
 
-Salin `env/.env.example` menjadi `env/.env`. Isi DATABASE_URL, REDIS_URL, signing secret minimal 32 byte, APP_ORIGIN dan pengaturan cookie. URL database harus memakai PostgreSQL; URL Redis memakai redis/rediss. Process environment lebih diprioritaskan daripada file. BACKEND_ENV_FILE dapat menunjuk file eksplisit; path file itu harus berada dalam lingkungan yang memang ingin digunakan.
-
-Compose lokal tersedia dalam repository ini. Isi POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD dan REDIS_PASSWORD; pilih POSTGRES_PORT/REDIS_PORT yang belum dipakai. URL runtime memakai host loopback dan port host yang sama. Percent-encode password di dalam URL. Compose memakai project default `warehouse-receiving-backend`, berbeda dari proyek sumber; database/volume sumber tidak dipindah atau dihapus.
+Semua command berikut dari **root checkout backend**, tempat package.json ini berada:
 
 ```powershell
-docker compose --env-file env/.env up -d --wait postgres redis
-npm run env:check
-npm run db:migrate:deploy
-npm run db:seed
+node --version
+npm --version
+npm ci
+npm run prisma:validate
+npm run prisma:generate
+```
+
+Gunakan npm versi baseline sebelum npm ci; lockfile tidak boleh diganti dengan install tanpa lock. `.npmrc` mengaktifkan engine-strict. Generate/validate memakai prisma.generate.config.ts tanpa DATABASE_URL/koneksi DB; model multi-file berada di prisma/models, output src/generated/prisma dihasilkan lokal dan tidak disimpan. Typecheck/build juga menjalankan generate, jadi tidak memerlukan generated client dari komputer pembuat.
+
+### Environment development
+
+```powershell
+if (-not (Test-Path 'env/.env')) { Copy-Item 'env/.env.example' 'env/.env' }
+notepad env/.env
+```
+
+Isi field credential yang masih kosong secara privat. File lokal diabaikan .gitignore/.dockerignore; jangan menyalin credential tes/deployment ke sini.
+
+| Variabel | Nilai/aturan development |
+| --- | --- |
+| NODE_ENV, DEPLOYMENT_MODE | development dan local. |
+| PORT, APP_ORIGIN | 3000 dan http://localhost:5175 tanpa path/trailing slash. |
+| SESSION_COOKIE_SECURE, TRUST_PROXY | false untuk HTTP lokal; TRUST_PROXY kosong. |
+| COMPOSE_PROJECT_NAME | wrs-development-laptop; guard dev menolak project lain. |
+| POSTGRES_USER, POSTGRES_DB | warehouse_dev dan warehouse_development sesuai template. |
+| POSTGRES_PORT, REDIS_PORT | 55450 dan56400 pada host127.0.0.1, sesuai URL runtime. |
+| POSTGRES_PASSWORD, REDIS_PASSWORD | Credential acak lokal, tidak ada nilai bawaan. |
+| DATABASE_URL | URL PostgreSQL privat ke127.0.0.1:55450, database warehouse_development; user/password cocok dengan field Compose. |
+| REDIS_URL | URL Redis privat ke127.0.0.1:56400; password cocok dengan REDIS_PASSWORD. |
+| REDIS_NAMESPACE | wrs:dev:laptop. |
+| SESSION_SECRET | Secret acak lokal minimal 32 byte. |
+| SEED_SUPERVISOR_*, SEED_OPERATOR_* | Isi NAME/EMAIL/PASSWORD kedua akun; email berbeda; nama 1-120 dan password 12-128 Unicode code point. Password tidak di-trim. |
+| SESSION_IDLE_SECONDS, SESSION_ABSOLUTE_SECONDS, ANONYMOUS_SESSION_SECONDS | Template 1800/28800/900; idle tidak boleh melebihi absolute. |
+
+Bangun URL credential secara privat dan percent-encode bagian credential; jangan mencetak URL tersebut. Seed mempertahankan record existing termasuk password hash; mengubah password di env **tidak** mengubah password akun lama. Tidak ada reset password/registrasi publik pada scope ini. Akun login awal dibuka sendiri dari env/.env, bagian SEED_SUPERVISOR_* / SEED_OPERATOR_*.
+
+## Execution: development lokal
+
+Nyalakan Docker Desktop terlebih dahulu, lalu pada terminal backend:
+
+```powershell
 npm run dev
 ```
 
-Migration dan seed memakai prisma.config.ts, sehingga membutuhkan DATABASE_URL nyata. Seed memerlukan kedua set SEED_SUPERVISOR_* dan SEED_OPERATOR_* dari environment; tidak memiliki password bawaan dan tidak mengganti akun/hash lama. Tidak ada migration atau seed otomatis saat install/build. Pilih DATABASE_URL dengan sengaja sebelum menjalankan command perubahan database.
-
-Server production hasil build dijalankan dengan `npm start`. Server memeriksa PostgreSQL/schema dan Redis sebelum listen; shutdown menutup HTTP, Prisma dan Redis. Periksa `http://localhost:3000/health/live` dan `/health/ready` sesuai PORT. Frontend merupakan repository/aplikasi terpisah; APP_ORIGIN default pada template merujuk Vite localhost:5173. Integrasi frontend saat ini melalui proxy Vite, bukan CORS lintas origin.
-
-Untuk menghentikan dependency tanpa menghapus volume:
+Pada terminal terpisah di checkout frontend, setelah setup frontend:
 
 ```powershell
-docker compose --env-file env/.env stop postgres redis
+npm run dev
 ```
 
-## Struktur dan aturan pengembangan
+Buka **http://localhost:5175**. Backend listen **3000**; Vite meneruskan request relatif /api/v1 dan /health ke **http://127.0.0.1:3000**. Host browser tetap localhost, jangan menggantinya dengan127.0.0.1 karena APP_ORIGIN harus cocok persis. Cookie wrs.sid HttpOnly/SameSite=Lax/host-only dan non-Secure hanya untuk local HTTP; CSRF dan authorization tetap ditegakkan.
 
-- app.ts membentuk Express app dengan dependency injection; server.ts menangani konfigurasi, koneksi, listener dan shutdown.
-- src/config, src/lib dan src/modules/health memuat fondasi runtime. Controller/service/repository/mapper fitur bisnis mengikuti spesifikasi assessment saat fitur tersebut dikerjakan.
-- prisma/schema.prisma dan prisma/models/*.prisma membentuk multi-file schema. prisma/migrations berisi seluruh forward migrations dan CHECK/composite FK tambahan; jangan mengubah migrasi yang sudah diterapkan.
-- prisma/seeds berasal dari env, memakai Argon2id dan advisory lock akun bersama. Password tidak di-trim; role hanya OPERATOR/SUPERVISOR, user deleted tidak dipulihkan oleh seed.
-- src/generated/prisma dihasilkan CLI Prisma 7; CLI, Client dan adapter memakai patch sama.
-- tests/unit dan tests/integration dipertahankan. Strict TypeScript, noUncheckedIndexedAccess, exactOptionalPropertyTypes dan pemeriksaan library tetap aktif. Jangan mengekspos password/hash/session internals atau mencetak connection string.
+scripts/dev.ts melakukan sekali per command: validasi env/.env/override -> cek port 3000 -> cek engine Docker -> Compose root compose.yaml project wrs-development-laptop up detached/wait PostgreSQL+Redis -> Prisma generate -> verifikasi current_database melalui URL host -> migrate deploy -> seed idempotent -> tsx watch server.ts. Tidak reset data/volume. Restart akibat perubahan source hanya me-restart API, tidak mengulang seluruh setup. Startup dari mesin baru membuat dependency project ini bila belum ada.
 
-## Verifikasi database terisolasi
-
-Unit tests tidak memerlukan database. Integration tests memerlukan PostgreSQL/Redis nyata, database khusus berakhiran `_test` dan RUN_FOUNDATION_INTEGRATION=true. Siapkan file env verifikasi baru sendiri, bukan menyalin credential lokal ke repository.
+Untuk cek environment/health, dari backend:
 
 ```powershell
-$env:BACKEND_ENV_FILE = (Resolve-Path 'env/.env.verification').Path
-npm run verify:database
-npm run db:seed
-npm run db:seed
-npm run test:integration
+npm run env:check
+Invoke-WebRequest 'http://localhost:3000/health/live'
+Invoke-WebRequest 'http://localhost:3000/health/ready'
+Invoke-WebRequest 'http://localhost:5175/health/ready'
 ```
 
-verify:database hanya untuk public schema kosong; ia menolak data/tabel existing dan tidak menghapusnya. Ia memeriksa deploy pertama dan deploy ulang tanpa perubahan schema/history. Suite integration fondasi mengharapkan tepat dua akun awal; fixture constraint rollback. Jangan menjalankannya pada database yang berisi data aplikasi. Pemeriksaan database tidak diulang pada tahap persiapan repository ini; lihat [testing.md](docs/testing.md) untuk bukti Task 2 dengan konteks proyek asal.
+Health200 tidak membuktikan login: /api/v1/auth/me sebelum login harus401; bootstrap /auth/csrf-token lalu login dengan Origin/CSRF, me 200, reload dan logout adalah alur autentikasi. Kontrak lengkap pada OpenAPI.
 
-## File untuk repository
-
-Pertahankan package-lock.json, source, tests, konfigurasi, template env dan **seluruh prisma/migrations**. .gitignore mengecualikan dependency, dist, cache, coverage, env lokal dan generated client. Metadata Git existing tidak diubah; staging/commit/remote/push dilakukan manual oleh pemilik proyek.
-
-Hasil pemeriksaan mandiri: [docs/verification.md](docs/verification.md).
-
-
-## Dokumentasi mandiri dan instruksi agent
-
-- [AGENTS.md](AGENTS.md): instruksi khusus scope repository ini; semua Git/GitHub hanya manual pengguna.
-- [PRD](docs/prd.md) dan [mapping 87 requirement](docs/requirement-mapping.md).
-- [Technical specification](docs/technical-spec.md), [workflow aktif](docs/ai-workflow.md), [testing/bukti](docs/testing.md).
-- [API Markdown](docs/api-contract.md), [OpenAPI](docs/openapi.yaml), [sinkronisasi kontrak](docs/api-sync.md).
-- [ERD](docs/erd.mmd) dan [data flow](docs/data-flow.mmd), sebagai desain backend atau boundary konsumen sesuai scope.
-- [Dependency plan](docs/dependency-plan.md), [review keputusan](docs/spec-review.md), [provenance](docs/provenance.md), [arsip asli](docs/history/README.md).
-
-API backend adalah sumber utama; frontend menyimpan salinan identik. Pemeriksaan dokumentasi lokal tanpa akses remote:
+Ctrl+C di terminal backend/frontend untuk menghentikan prosesnya. Dependency tetap hidup; jika tidak dipakai, hentikan hanya project development tanpa menghapus volume:
 
 ```powershell
-python docs/validation/check-docs.py
+docker compose -p wrs-development-laptop --env-file env/.env stop postgres redis
 ```
 
+Untuk generate/migration/seed manual, command tersedia di bawah; periksa target env dahulu. npm run dev sudah menangani migration deploy/seed, tidak perlu menjalankannya manual setiap start. `npm start` menjalankan dist/server.js setelah build, tanpa persiapan Docker/migrasi/seed otomatis.
 
-## Autentikasi Task 3
+### Troubleshooting
 
-Bootstrap token melalui GET /api/v1/auth/csrf-token; simpan cookie dan token, kemudian kirim login dengan JSON email/password, Origin sesuai APP_ORIGIN dan X-CSRF-Token. Token baru dikembalikan sesudah login; gunakan untuk logout dan mutation selanjutnya. Logout tidak memiliki body, tetapi tetap wajib Content-Type application/json, cookie, trusted Origin/Referer dan CSRF. Semua auth response memakai Cache-Control: no-store.
+| Gejala | Pemeriksaan/tindakan |
+| --- | --- |
+| Missing/invalid environment | Buat env/.env dari template; isi URL, secret, cookie dan seed. Jangan membagikan isi env. |
+| Conflicting terminal overrides | Loader umum memakai process env sebelum file; wrapper dev menolak konflik. Hapus hanya variabel yang disebut (misalnya BACKEND_ENV_FILE), buka terminal bersih, ulangi. |
+| Docker engine unavailable | Nyalakan Docker Desktop, tunggu engine ready, ulangi npm run dev. |
+| Port 3000/5175 terpakai | Identifikasi pemilik lewat Get-NetTCPConnection/netstat. Hentikan hanya proses sendiri; startup tidak membunuh aplikasi lain atau berpindah port. |
+| Origin/CSRF403 | Pastikan browser localhost:5175, APP_ORIGIN sama, SESSION_COOKIE_SECURE=false dan token baru setelah login. Jangan mematikan validasi. |
+| Proxy500 | Pastikan backend 3000 ready; override Vite lama ke3306 harus dihapus. Vite biasa menolak alternate API_PROXY_TARGET. |
+| PostgreSQL/Redis tidak ready | Periksa docker compose -p wrs-development-laptop --env-file env/.env ps serta log dependency secara lokal, kesamaan host-port/URL/password, dan schema. Jangan reset volume untuk memperbaiki credential. |
+| Warning workspace config | Jalankan dari checkout mandiri, bukan parent workspaces lama. Pada proyek sumber ini registration workspace parent sudah dilepas; config parent lain dapat kembali memengaruhi npm. |
 
-REDIS_NAMESPACE default wrs; gunakan namespace wrs:test:<identitas> untuk tes. TRUST_PROXY kosong berarti tidak mempercayai proxy. Pada HTTPS, isi daftar IP/CIDR proxy sebenarnya; loopback hanya sesuai proxy lokal. Jangan memakai true atau hop count arbitrer. Cookie HTTP lokal wrs.sid; HTTPS __Host-wrs.sid (Secure, HttpOnly, SameSite=Lax, Path=/, tanpa Domain). Session anonymous 15 menit, idle 30 menit dan absolute 8 jam. Dependency error 503 tidak boleh diperlakukan sebagai password salah.
-
-Untuk auth integration, env terisolasi harus mempunyai database _test, REDIS_NAMESPACE wrs:test:..., RUN_FOUNDATION_INTEGRATION=true serta kedua credential seed. Jalankan deploy, seed dan npm run test:integration pada database verifikasi khusus. Jangan menjalankan verify:database ulang pada schema yang sudah terisi. Suite auth menggunakan namespace unik per test, tidak FLUSHALL. Vitest dijalankan serial antar-file karena fixture akun fondasi dipakai bersama.
-
-Bukti Task 3 ada di [testing](docs/testing.md#bukti-aktual-task-3). Kontrak backend diperbarui metadata implementasinya; replika frontend dan contract-version.json perlu disinkronkan manual sesuai [api-sync](docs/api-sync.md). Tidak ada endpoint bisnis atau perubahan frontend pada Task 3.
-
-
-## Core receiving Task 4
-
-Kedua role dapat membaca produk/stok/history serta membuat/membaca/menerima receiving; hanya supervisor dapat membuat produk. Semua endpoint memakai session, current-user reload dan shared user limiter; mutation juga CSRF/JSON/trusted Origin. Products create sekaligus membuat balance nol. Create receiving tidak mengubah stok. Reference/name/q mengikuti code-point boundaries dan normalisasi kontrak.
-
-Untuk receipt, kirim Idempotency-Key UUID dan body items berisi receivingItemId/quantity delta positif. Pertahankan key dan payload ketika respons hilang atau menerima retry-required; replay operasi identik mengembalikan receipt asli (200, Idempotency-Replayed true), operasi baru 201/false. Payload/actor berbeda dengan key sama conflict 409. Tidak ada manual complete/cancel/adjustment. Jangan mengirim total stock/received/status dari client.
-
-Detail receiving dibaca melalui read-only REPEATABLE READ; receipt menggunakan READ COMMITTED dengan parent/item row lock. Counter, receipt, ledger, balance dan status commit atomik. Inventory quantity adalah decimal string. Semua SQL constraints/migration Task 2 tetap; tidak ada dependency atau schema baru.
-
-Untuk mengulang verifikasi, sediakan env tes khusus sesuai template (DB _test, namespace wrs:test:..., seed credentials lokal). Pada eksekusi ini dipakai env/.env.task4 yang diabaikan; bukan file untuk disalin sebagai credential publik:
+Menghapus override spesifik di PowerShell tidak menampilkan nilainya:
 
 ```powershell
-$env:BACKEND_ENV_FILE = (Resolve-Path 'env/.env.task4').Path
-npm run test:unit
-npm run test:integration
+Remove-Item Env:BACKEND_ENV_FILE -ErrorAction SilentlyContinue
+# Hapus DATABASE_URL/REDIS_URL/variabel lain hanya bila konflik dilaporkan, lalu ulangi dev.
+```
+
+## Testing
+
+Command dari root backend, setelah npm ci:
+
+```powershell
 npm run lint
 npm run typecheck
 npm run build
+npm run test:unit
 ```
 
-Laporan aktual ada pada [testing Task 4](docs/testing.md#bukti-aktual-task-4). Frontend/Task 6 belum dikerjakan; sumber kontrak backend perlu disalin manual ke frontend sesuai api-sync.md.
+Unit tidak memerlukan DB/Redis. Integration memakai PostgreSQL/Redis nyata; tidak menjalankan dev wrapper atau fixture integrasi pada database development/deployment. Gunakan terminal khusus tes dan database disposable berakhiran `_test` dengan namespace Redis `wrs:test:...`. Jangan memakai file .env.taskN milik pembuat sebagai prasyarat.
 
+### Menyiapkan integration dari template yang disertakan
 
-## User management Task 5
+```powershell
+if (-not (Test-Path 'env/.env.test-review')) { Copy-Item 'env/.env.example' 'env/.env.test-review' }
+notepad env/.env.test-review
+```
 
-Supervisor dapat membuat OPERATOR/SUPERVISOR, list/detail user (termasuk detail deleted), mengubah name/role/isActive, dan soft delete. Query list: pagination, role, isActive literal true/false, includeDeleted literal true/false (default false); urutan createdAt DESC, id DESC. Email tetap unik termasuk deleted; update email/password, reset/restore, registrasi publik dan role tambahan tidak tersedia.
+Isi credential acak sendiri dan kedua akun seed. Ubah NODE_ENV=test, COMPOSE_PROJECT_NAME=wrs-review-tests, POSTGRES_DB=wrs_review_test, POSTGRES_PORT=55460, REDIS_PORT=56410, REDIS_NAMESPACE=wrs:test:review. Pilih project/port baru bila contoh sudah dipakai; sesuaikan URL host localhost/127.0.0.1 serta database/user/password dengan field service. APP_ORIGIN boleh http://localhost:5173 untuk target E2E; DEPLOYMENT_MODE=local/SESSION_COOKIE_SECURE=false. Tambahkan RUN_FOUNDATION_INTEGRATION=true ke file. Jangan arahkan ke data aplikasi yang ingin dipertahankan.
 
-Semua mutation mengambil advisory lock transaksi 735910001 yang sama dengan seed dan memeriksa ulang actor sebagai supervisor aktif setelah lock diperoleh. Hash Argon2id dibuat sebelum transaksi. Self-demotion/deactivation/deletion ditolak; minimal satu supervisor aktif dipertahankan. Perubahan role/status aktual menaikkan authVersion sekali, nama/no-op tidak. Soft delete menonaktifkan akun dan menaikkan versi; delete ulang 204 tanpa perubahan tambahan. Semua field/hash/version mutation commit atomik.
+```powershell
+$env:BACKEND_ENV_FILE = (Resolve-Path 'env/.env.test-review').Path
+$env:RUN_FOUNDATION_INTEGRATION = 'true'
+docker compose -p wrs-review-tests --env-file env/.env.test-review up -d --wait postgres redis
+npm run prisma:generate
+npm run verify:database
+npm run db:seed
+npm run test:integration
+# Sesudah selesai, bersihkan override pada terminal tes:
+Remove-Item Env:RUN_FOUNDATION_INTEGRATION -ErrorAction SilentlyContinue
+Remove-Item Env:BACKEND_ENV_FILE -ErrorAction SilentlyContinue
+```
 
-Gunakan session/CSRF/JSON/trusted Origin seperti mutation lain, termasuk DELETE tanpa body dengan Content-Type application/json. USER_NOT_FOUND 404, konflik domain 409, dependency failure 503; DTO whitelist sama dengan auth dan tidak berisi password/hash/authVersion. Task 6/frontend tidak dikerjakan.
+verify:database hanya untuk schema public **kosong**; ia memeriksa target `_test`, menjalankan migrate deploy dua kali dan membandingkan schema/history. Ia menolak tabel existing tanpa menghapusnya. Untuk DB tes yang sudah dimigrasi dan sengaja dipakai ulang, jalankan `npm run db:migrate:deploy` menggantikan verify:database, lalu seed/test; fixture dapat menambah data. Gunakan DB/project tes baru untuk clean migration check. Seed ulang aman tidak menduplikasi email/mengganti password. Seed email/password harus tetap cocok dengan akun existing agar suite login dapat berjalan. Integration mencakup auth/security, user invariant/revocation, receiving concurrency/idempotency/rollback, reconciliation dan constraint; Vitest fileParallelism=false. Untuk berhenti: Ctrl+C runner, lalu stop dependency project tes saja bila tidak dibutuhkan.
 
-Bukti lengkap ada di [testing Task 5](docs/testing.md#bukti-aktual-task-5). Untuk suite terbaru, arahkan BACKEND_ENV_FILE ke environment khusus _test/namespace wrs:test:... (eksekusi ini env/.env.task5), lalu npm run test:unit dan npm run test:integration. Tidak membersihkan database/volume existing untuk re-run.
+### Hasil historis dan validasi README
+
+Bukti implementasi pada [docs/testing.md](docs/testing.md): unit terakhir19 PASS, Linux Task 7 backend 75 PASS (sebelum3 tes guard dev ditambahkan), pengujian Docker operasional14 PASS, frontend 13 components dan10 browser desktop/mobile PASS. Ini run berbeda, bukan satu suite/versi yang sama. Tidak mengklaim 78 full backend suite sudah dijalankan. Pada pekerjaan README ini, suite aplikasi/build/deploy/login ulang **NOT_RUN**; hanya validasi statis instruksi/path/tautan/syntax, tanpa server tambahan atau perubahan DB. Bukti JSON/screenshot historis lokal tidak dibutuhkan untuk menjalankan suite. Playwright pada repository frontend adalah pengujian E2E sistem, bukan script backend.
+
+## Deployment Docker lokal
+
+Seluruh command bagian ini dijalankan **dari root checkout backend**, termasuk bila membaca README frontend. Docker Desktop/Engine dan Compose v2 harus aktif. Ini berbeda dari Compose dependency development pada compose.yaml di root backend.
+
+Buat file lokal dari template yang disertakan, tanpa menimpa file existing:
+
+```powershell
+if (-not (Test-Path 'deploy/.env')) { Copy-Item 'deploy/.env.example' 'deploy/.env' }
+notepad deploy/.env
+```
+
+Isi privat sebelum build/up:
+
+| Variabel | Pengaturan deployment lokal |
+| --- | --- |
+| COMPOSE_PROJECT_NAME | Project tersendiri, default wrs-local; jangan reuse project tes/development. |
+| FRONTEND_CONTEXT | Root checkout frontend, relatif terhadap deploy/compose.yaml atau absolut. |
+| WEB_PORT, APP_ORIGIN | Default 8080 dan http://localhost:8080; ubah keduanya bersama bila port berbeda. |
+| APP_SUBNET, GATEWAY_IP | Subnet yang belum dipakai dan IP gateway dalam subnet; template 172.29.70.0/24 dan 172.29.70.10. |
+| POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD | Identitas database deployment dan credential lokal sendiri. |
+| REDIS_PASSWORD, REDIS_NAMESPACE | Credential Redis dan namespace deployment, terpisah dari tes/development. |
+| DATABASE_URL | URL PostgreSQL privat memakai host internal postgres, port 5432, database/user/password sesuai field service. |
+| REDIS_URL | URL Redis privat memakai host internal redis, port 6379 dan credential sesuai REDIS_PASSWORD. |
+| SESSION_SECRET | Nilai acak minimal 32 byte; jangan masukkan ke source, frontend atau laporan. |
+| SEED_SUPERVISOR_*, SEED_OPERATOR_* | name/email/password akun awal; dua email berbeda, password 12-128 Unicode code point. |
+| DEPLOYMENT_MODE, SESSION_COOKIE_SECURE | local dan false untuk HTTP lokal. |
+
+Percent-encode credential pada URL secara lokal. Jangan memakai localhost pada URL antarcontainer. File Compose --env-file tidak sama dengan BACKEND_ENV_FILE loader Node; jangan memakai env development/test sebagai deployment. Process environment dapat menimpa interpolasi Compose: gunakan terminal bersih dari override task lain. Mengganti env tidak otomatis mengganti password PostgreSQL di volume existing atau password akun seed lama.
+
+```powershell
+docker compose -f deploy/compose.yaml --env-file deploy/.env build
+docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --wait
+docker compose -f deploy/compose.yaml --env-file deploy/.env ps -a
+Invoke-WebRequest 'http://localhost:8080/health/live'
+Invoke-WebRequest 'http://localhost:8080/health/ready'
+docker compose -f deploy/compose.yaml --env-file deploy/.env logs --tail 80 migrate api web
+```
+
+Sesuaikan URL health jika WEB_PORT diubah. Buka **http://localhost:8080** dan login memakai akun seed dalam deploy/.env yang diisi pemilik. Build pertama memerlukan jaringan untuk image/npm/OS packages. Dockerfile memakai Node 24.12.0/npm 11.6.2 dan npm ci dari lockfile lokal; Prisma Client digenerate offline saat build. Image Node, PostgreSQL 17.11, Redis 8.2.11 dan nginx 1.30.6 dipin digest pada konfigurasi.
+
+Urutan aktual `up`: PostgreSQL/Redis healthy -> service **migrate** menjalankan migration deploy **dan seed** hingga exit0 -> **api** readiness healthy -> **web**. Job migrate memakai target Dockerfile sendiri, bukan dijalankan tiap replica API. API/image tidak menjalankan npm run dev. Untuk deploy perubahan migration atau rerun job eksplisit, dengan target deployment sudah diperiksa dan dependency healthy:
+
+```powershell
+docker compose -f deploy/compose.yaml --env-file deploy/.env run --rm migrate
+```
+
+Web adalah nginx static server/gateway port internal 8080, publish hanya 127.0.0.1:WEB_PORT. API3000, PostgreSQL 5432 dan Redis 6379 hanya jaringan container. `/api/v1` dan `/health` diproxy tanpa menghapus prefix; reload deep route memakai SPA fallback. Gateway meneruskan Origin, menimpa forwarded headers dan hanya IP gateway yang dipercaya API. Tidak ada automatic mutation retry. Root filesystem API/web read-only dengan tmpfs; keduanya non-root.
+
+Untuk menghentikan tanpa kehilangan data, lalu menjalankan kembali:
+
+```powershell
+docker compose -f deploy/compose.yaml --env-file deploy/.env stop
+docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --wait
+```
+
+`up` mengikuti dependency order di atas dan dapat menjalankan ulang job yang sudah exit; seed tetap idempotent dan tidak mengganti password existing. Jangan reset/drop database, menghapus volume atau memakai prune sebagai langkah rutin. Periksa/redaksi log sebelum dibagikan; jangan membagikan resolved Compose config atau container environment yang mengandung secret.
+
+Deployment ini **HTTP lokal**, terpisah dari production publik. HTTPS nanti membutuhkan terminasi TLS/certificate nyata, APP_ORIGIN https yang benar, DEPLOYMENT_MODE=https, SESSION_COOKIE_SECURE=true dan trusted proxy sesuai topologi. Hanya mengganti env pada listener HTTP tidak cukup. HTTPS/TLS browser, VPS/domain/public hosting **NOT_RUN**.
+
+## Dokumentasi submission
+
+Hanya tujuh dokumen berikut yang diperlukan dari folder docs:
+
+- [PRD](docs/prd.md): requirement, role dan aturan bisnis.
+- [Technical specification](docs/technical-spec.md): arsitektur dan keputusan teknis.
+- [ERD](docs/erd.mmd): diagram entitas/relasi Mermaid.
+- [OpenAPI](docs/openapi.yaml): kontrak request, response dan error API.
+- [Data flow](docs/data-flow.mmd): diagram alur Mermaid.
+- [AI workflow](docs/ai-workflow.md): tahapan implementasi dan checklist.
+- [Testing](docs/testing.md): perintah, hasil historis, kegagalan awal dan batas verifikasi.
+
+README ini memuat instruksi operasional yang diperlukan; tidak membutuhkan panduan tambahan, manifest, screenshot atau script di docs yang tidak disertakan. Referensi historis dalam dokumen testing tidak berarti file evidence lokal ikut submission. Source, tests, template environment, Dockerfile, konfigurasi dan semua migrasi Prisma di luar docs tetap diperlukan. Semua pekerjaan Git/GitHub dilakukan manual oleh pemilik.
+
+## Keterbatasan
+
+Tidak ada public registration, reset/change password, restore user, edit/delete product, manual complete/cancel receipt atau stock adjustment. Log/audit error menyeluruh, matriks setiap UI state dan receipt in-flight tepat saat revocation belum seluruhnya diverifikasi. HTTPS/public hosting, Firefox/WebKit/Safari, mobile fisik, load/stress/SLA, fuzzing dan accessibility audit menyeluruh NOT_RUN. Warning internal pg query-in-flight dan Vite PURE/chunk besar tercatat pada testing; tidak dinyatakan selesai. Tidak ditemukan input build/unit/integration yang membutuhkan file docs di luar tujuh dokumen; report E2E baru ditulis ke folder ignored sebagai output, bukan input checkout.
+
+## Pemeriksaan README pada 2026-10-29
+
+PASS pemeriksaan statis nama npm scripts terhadap package.json, keberadaan template/config, tepat tujuh tautan dokumen submission yang tersedia, serta syntax seluruh blok PowerShell. Audit source/config tidak menemukan input build/test pada docs yang diabaikan; E2E menulis report/screenshot baru sebagai output. Secret environment lokal tidak ditemukan dalam isi README. Suite aplikasi dan startup/deployment dari checkout bersih tidak diulang pada pekerjaan dokumentasi ini: **NOT_RUN**. Hanya README backend/frontend diubah; tidak membuat server, mengubah konfigurasi, menjalankan Git, atau mengubah database/volume.
