@@ -1,0 +1,25 @@
+enum Role {
+  OPERATOR
+  SUPERVISOR
+
+  @@map("user_role")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String    @unique @db.VarChar(254)
+  name         String    @db.VarChar(120)
+  passwordHash String    @map("password_hash") @db.Text
+  role         Role
+  isActive     Boolean   @default(true) @map("is_active")
+  authVersion  Int       @default(1) @map("auth_version")
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  receivings   Receiving[]
+  receipts     Receipt[]
+
+  @@index([role, isActive])
+  @@index([createdAt, id])
+  @@map("users")
+}

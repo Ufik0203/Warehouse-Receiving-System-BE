@@ -1,0 +1,29 @@
+model InventoryBalance {
+  productId         String   @id @map("product_id") @db.Uuid
+  availableQuantity BigInt   @default(0) @map("available_quantity")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("inventory_balances")
+}
+
+model InventoryTransaction {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId       String        @map("receipt_id") @db.Uuid
+  receivingId     String        @map("receiving_id") @db.Uuid
+  receivingItemId String        @map("receiving_item_id") @db.Uuid
+  productId       String        @map("product_id") @db.Uuid
+  quantity        Int
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  receipt         Receipt       @relation(fields: [receiptId, receivingId], references: [id, receivingId], onDelete: Restrict, onUpdate: Restrict)
+  receivingItem   ReceivingItem @relation(fields: [receivingItemId, receivingId, productId], references: [id, receivingId, productId], onDelete: Restrict, onUpdate: Restrict)
+  receiving       Receiving     @relation(fields: [receivingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([receiptId, receivingItemId])
+  @@index([productId, createdAt, id])
+  @@index([receivingId, createdAt, id])
+  @@index([receivingItemId])
+  @@index([createdAt, id])
+  @@map("inventory_transactions")
+}

@@ -1,0 +1,44 @@
+%% Reconstructed from PROJECT_SPEC.md receiving transaction and exported sequence labels.
+sequenceDiagram
+    participant UI as React
+    participant API as Express
+    participant Redis
+    participant Service as Receiving service
+    participant DB as PostgreSQL
+    UI->>API: POST receipt with cookie, CSRF and Idempotency-Key
+    API->>Redis: Check rate limit and load session
+    Redis-->>API: Session and limiter result
+    API->>DB: Read current user and authVersion
+    DB-->>API: Current authorization data
+    API->>API: Validate authentication, CSRF, role and payload
+    Note over API,Redis: Dependency failure returns 503; no in-memory fallback
+    API->>Service: Receive validated items
+    Service->>Service: Normalize UUIDs, sort items, hash receiving + actor + payload
+    Service->>DB: BEGIN READ COMMITTED; lock receiving
+    Service->>DB: Find receipt by receiving and key
+    DB-->>Service: Original receipt and payload hash, if any
+    alt Matching receipt exists
+        Service->>DB: End transaction without writes
+        Service-->>API: Original immutable receipt
+        API-->>UI: 200 replay; Idempotency-Replayed true
+    else Key conflicts
+        Service->>DB: ROLLBACK
+        Service-->>API: Idempotency conflict
+        API-->>UI: 409 IDEMPOTENCY_CONFLICT
+    else New receipt
+        Service->>DB: Reject completed; lock items; validate remaining
+        alt Invalid operation
+            Service->>DB: ROLLBACK
+            Service-->>API: Business error
+            API-->>UI: Error without stock changes
+        else Valid operation
+            Service->>DB: Insert receipt; update item quantities; insert ledger
+            Service->>DB: Increment balances in productId order; update status
+            Service->>DB: COMMIT
+            Service-->>API: New immutable receipt
+            API-->>UI: 201 created; Idempotency-Replayed false
+        end
+    end
+    Note over UI,DB: Database write failure rolls back every change
+    Note over UI,API: Lost response after commit: retain key + payload and replay
+    UI->>UI: Invalidate affected TanStack queries after confirmed receipt

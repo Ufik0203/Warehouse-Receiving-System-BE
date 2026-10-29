@@ -1,0 +1,58 @@
+enum ReceivingStatus {
+  OPEN
+  PARTIAL
+  COMPLETED
+
+  @@map("receiving_status")
+}
+
+model Receiving {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  number       String          @unique @db.VarChar(40)
+  reference    String          @default("") @db.VarChar(160)
+  status       ReceivingStatus @default(OPEN)
+  createdBy    String          @map("created_by") @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creator      User            @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  items        ReceivingItem[]
+  receipts     Receipt[]
+  transactions InventoryTransaction[]
+
+  @@index([status, createdAt, id])
+  @@index([createdAt, id])
+  @@map("receivings")
+}
+
+model ReceivingItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receivingId      String    @map("receiving_id") @db.Uuid
+  productId        String    @map("product_id") @db.Uuid
+  expectedQuantity Int       @map("expected_quantity")
+  receivedQuantity Int       @default(0) @map("received_quantity")
+  receiving        Receiving @relation(fields: [receivingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  transactions     InventoryTransaction[]
+
+  @@unique([receivingId, productId])
+  @@unique([id, receivingId, productId])
+  @@index([productId])
+  @@map("receiving_items")
+}
+
+model Receipt {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receivingId    String    @map("receiving_id") @db.Uuid
+  actorId        String    @map("actor_id") @db.Uuid
+  idempotencyKey String    @map("idempotency_key") @db.Uuid
+  payloadHash    String    @map("payload_hash") @db.Char(64)
+  receivedAt     DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+  receiving      Receiving @relation(fields: [receivingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor          User      @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  transactions   InventoryTransaction[]
+
+  @@unique([receivingId, idempotencyKey])
+  @@unique([id, receivingId])
+  @@index([actorId])
+  @@map("receipts")
+}

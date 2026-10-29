@@ -1,0 +1,201 @@
+{
+  "capturedDate": "2026-10-29",
+  "context": "Original combined-project documentation and evidence before standalone documentation adaptation; immutable history, not active instructions.",
+  "files": [
+    {
+      "source": "docs/ai-workflow.md",
+      "archive": "docs/ai-workflow.md",
+      "sha256": "c4f145eea01725c87ab225752d8358acfb7e1c241bb3c44cb4c482eda3e47d3e"
+    },
+    {
+      "source": "docs/api-contract.md",
+      "archive": "docs/api-contract.md",
+      "sha256": "9ebd4c2362d9b2053d87072fb7ea0e843e15b99d10c83dca4afbf01810bc91fe"
+    },
+    {
+      "source": "docs/data-flow.mmd",
+      "archive": "docs/data-flow.mmd",
+      "sha256": "fde46227be9d5c9d7915edc365e62ecf9dd8f73de939471de061090cba7987f1"
+    },
+    {
+      "source": "docs/dependency-plan.md",
+      "archive": "docs/dependency-plan.md",
+      "sha256": "1d6e94904a385b4c4021cfa98765281e90fc0b6225485732030dc9d0850b9fb6"
+    },
+    {
+      "source": "docs/dependency-versions.json",
+      "archive": "docs/dependency-versions.json",
+      "sha256": "1510ac0363bf5cd751191b0e3d3cf7e067852f605291fb2223164b76cb70f585"
+    },
+    {
+      "source": "docs/erd.mmd",
+      "archive": "docs/erd.mmd",
+      "sha256": "2d2b948af6efd3f8018c02e55fe10a6c0b276643657b57abf04cf6704486130e"
+    },
+    {
+      "source": "docs/openapi.yaml",
+      "archive": "docs/openapi.yaml",
+      "sha256": "696572d3d9bd1cbb0325ebd3067e951eebdb4e7ec4ceb3c8d456ff04fba6fc24"
+    },
+    {
+      "source": "docs/prd.md",
+      "archive": "docs/prd.md",
+      "sha256": "57cf457afb9c4b529b96fab5e4157a699367eff85e34d12d157c25fcbf54e262"
+    },
+    {
+      "source": "docs/requirement-mapping.md",
+      "archive": "docs/requirement-mapping.md",
+      "sha256": "7a0568f95f9404b505b1205e1fc41a124a8093b9d84259066b560953b53dafe1"
+    },
+    {
+      "source": "docs/spec-review.md",
+      "archive": "docs/spec-review.md",
+      "sha256": "179c99774681103c54e1dc9683b1e48c8a17c04ae4ce64dfcae70bc8ed0be733"
+    },
+    {
+      "source": "docs/technical-spec.md",
+      "archive": "docs/technical-spec.md",
+      "sha256": "2998bd93f99b60b738e30facb243fbd69a54f352c19b777b2f9bcd8ba66628a4"
+    },
+    {
+      "source": "docs/testing.md",
+      "archive": "docs/testing.md",
+      "sha256": "ba1e4aef70ebbf45bb502ab0d943198bf6d8766f775c5ea38160482684053e70"
+    },
+    {
+      "source": "docs/evidence/task-2a-browser.json",
+      "archive": "docs/evidence/task-2a-browser.json",
+      "sha256": "c4f005fba35ddde3746a4d5cd8a79afa3d8ebddcf09dcf9fd0febaf995687af5"
+    },
+    {
+      "source": "docs/evidence/task-2a-desktop.png",
+      "archive": "docs/evidence/task-2a-desktop.png",
+      "sha256": "31cafdef8a91ebd67ab5e17dc54c587099aa5712b05d4ddf5773d961f8323e88"
+    },
+    {
+      "source": "docs/evidence/task-2a-mobile.png",
+      "archive": "docs/evidence/task-2a-mobile.png",
+      "sha256": "73d6d796cf4925d4f306d19730bc8d33eabd3437ab1c9569f0187e1de1bb0b46"
+    },
+    {
+      "source": "docs/validation/build-openapi.py",
+      "archive": "docs/validation/build-openapi.py",
+      "sha256": "3a9ad2458e27a5a28c1871556c52ff514d80adc942bf0ce96246ff8546c6fe80"
+    },
+    {
+      "source": "docs/validation/check-docs.py",
+      "archive": "docs/validation/check-docs.py",
+      "sha256": "2399a78bcfcb2cae19d0e7723c885e1ae643fede04c0c23a0c8db97c2271aef5"
+    },
+    {
+      "source": "docs/validation/requirements.txt",
+      "archive": "docs/validation/requirements.txt",
+      "sha256": "d85c840bb448083a8281a7d12d6ae9246547b643abf7126052524cde9a64623a"
+    },
+    {
+      "source": "docs/validation/verify-standalone.py",
+      "archive": "docs/validation/verify-standalone.py",
+      "sha256": "64a27a4e6d256df19db7944526e305a536647f6b3e4ac71776af738582badf06"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-build.log",
+      "archive": "docs/evidence/standalone/backend-build.log.txt",
+      "sha256": "be9abe5d77d40a21ee10f25436e9ed7c271526b1a9fc196a9f4081685539d5a4"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-ci.log",
+      "archive": "docs/evidence/standalone/backend-ci.log.txt",
+      "sha256": "5d9dc1dab091770778e1b44141f2e6702047b7e952767609647ce63c476c0d9f"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-lint.log",
+      "archive": "docs/evidence/standalone/backend-lint.log.txt",
+      "sha256": "16cedd3837d3470db82167d6fbcba5885c55bfebdee28fee426f0e23e0052209"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-lock.log",
+      "archive": "docs/evidence/standalone/backend-lock.log.txt",
+      "sha256": "1a4c091d2ceca58d531875c62a149cf722d11a7431addd2144b82056f60d6125"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-tree.log",
+      "archive": "docs/evidence/standalone/backend-tree.log.txt",
+      "sha256": "d642f01cb8909244a183ada83a6f177c2ea0301db1319f3251e026d05ea1cd48"
+    },
+    {
+      "source": "docs/evidence/standalone/backend-typecheck.log",
+      "archive": "docs/evidence/standalone/backend-typecheck.log.txt",
+      "sha256": "8977130f657801fd5ab0bea672e188176109aaad0ece83aefbef539cc7efdaa0"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-build.log",
+      "archive": "docs/evidence/standalone/frontend-build.log.txt",
+      "sha256": "c40a2744a257f5b1bd5d891b0ff8c54f768ef0a8eead276ec2045fbac5e716b4"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-ci.log",
+      "archive": "docs/evidence/standalone/frontend-ci.log.txt",
+      "sha256": "e3e4f1db5599b53a1fbd867979c7edbe08989608cdb9d0ae74b74938ecdf1537"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-lint.log",
+      "archive": "docs/evidence/standalone/frontend-lint.log.txt",
+      "sha256": "913a993a646a3190ad547d30fd3955ba4cc8c8b08b349c99e5c5d5b4e3f6de53"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-lock.log",
+      "archive": "docs/evidence/standalone/frontend-lock.log.txt",
+      "sha256": "a13e2701ff279181b992209beb486a3d81c329411927cb5ffeb8fe5c37ddac8f"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-tree.log",
+      "archive": "docs/evidence/standalone/frontend-tree.log.txt",
+      "sha256": "8a744bf2ada92279709c98e00688272a6c5e0ed4a2e6e535acc65d60fcf95742"
+    },
+    {
+      "source": "docs/evidence/standalone/frontend-typecheck.log",
+      "archive": "docs/evidence/standalone/frontend-typecheck.log.txt",
+      "sha256": "53cc3ad8b6314957f52aa1b5f501f52320e2f1cf4af180e4242f1903bd148611"
+    },
+    {
+      "source": "docs/evidence/standalone/results.json",
+      "archive": "docs/evidence/standalone/results.json",
+      "sha256": "114670676565b8c2b661946ed8753de6a8df778482be357ff88d6574b5652ed9"
+    },
+    {
+      "source": "PROJECT_SPEC.md",
+      "archive": "PROJECT_SPEC.md",
+      "sha256": "901d39dc9ed68be7aa86fbcecf177c16fd57d0e767ace0360f2c74f825cfef8b"
+    },
+    {
+      "source": "AGENTS.md",
+      "archive": "AGENTS.md",
+      "sha256": "887c4b92117015d51e7d49c6447f5aa790f6097b2f6499deb55cc854721be84f"
+    },
+    {
+      "source": "README.md",
+      "archive": "README.md",
+      "sha256": "1628f98824f522be30e25e4b9cdf49f60271277633fc465f50646e65d6fa9c69"
+    },
+    {
+      "source": "backend/README.md",
+      "archive": "backend/README.md",
+      "sha256": "0bebddf6b3768ce008d311b33040a1f87d0ad3b50666d6f0760a294ac766886d"
+    },
+    {
+      "source": "frontend/README.md",
+      "archive": "frontend/README.md",
+      "sha256": "738b59ceb20ce16ac1abc9e3c6460197ff2d21d3e6b013221a99272c83c670a5"
+    },
+    {
+      "source": "backend/docs/verification.md",
+      "archive": "backend/docs/verification.md",
+      "sha256": "7e892bc8b280495946364a70924a03d2fd2eda2c32facf48ca05ce93362c8c1b"
+    },
+    {
+      "source": "frontend/docs/verification.md",
+      "archive": "frontend/docs/verification.md",
+      "sha256": "91db108bafe7d8e0c7ac82d7a5fc217bca30d3f5b54821c11e6d8aacdb56aa8e"
+    }
+  ]
+}

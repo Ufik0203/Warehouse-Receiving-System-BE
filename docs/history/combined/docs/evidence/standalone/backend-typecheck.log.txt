@@ -1,0 +1,14 @@
+
+> @wrs/backend@0.1.0 typecheck
+> npm run prisma:generate && tsc --noEmit
+
+
+> @wrs/backend@0.1.0 prisma:generate
+> prisma generate --config prisma.generate.config.ts
+
+
+✔ Generated Prisma Client (7.10.1) to .\src\generated\prisma in 59ms
+
+Loaded Prisma config from prisma.generate.config.ts.
+
+Prisma schema loaded from prisma.

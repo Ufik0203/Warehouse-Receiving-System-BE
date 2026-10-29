@@ -1,0 +1,8 @@
+{
+  "authority": "backend",
+  "snapshotDate": "2026-10-29",
+  "files": {
+    "api-contract.md": "bcbd55cf7e9a3db676b59b4ac5be6493f310ca30b2e333889838a06c55edc267",
+    "openapi.yaml": "db04907ba4374c1e03f4cdd9813f25120ca33f1c007889a2bbfaff69877f2fc5"
+  }
+}

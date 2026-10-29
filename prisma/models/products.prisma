@@ -1,0 +1,12 @@
+model Product {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku          String   @unique @db.VarChar(40)
+  name         String   @db.VarChar(120)
+  unit         String   @default("pcs") @db.VarChar(8)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  balance      InventoryBalance?
+  items        ReceivingItem[]
+  transactions InventoryTransaction[]
+
+  @@map("products")
+}

@@ -1,0 +1,61 @@
+{
+  "directory": "C:\\Users\\mario\\AppData\\Local\\Temp\\wrs-standalone-aqndopox",
+  "repositories": {
+    "backend": {
+      "commands": [
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm ci --offline=false",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run lint",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run typecheck",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run build",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm ls --all --json",
+          "exitCode": 0
+        }
+      ],
+      "localDependencies": true,
+      "lockSha256": "c8a6d7bfa201b6a2ae6fec3f6f3208bed8fcc91c48acd02c58c6880f8d312b32"
+    },
+    "frontend": {
+      "commands": [
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm install --package-lock-only --ignore-scripts --offline=false",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm ci --offline=false",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run lint",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run typecheck",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm run build",
+          "exitCode": 0
+        },
+        {
+          "command": "npx --yes --offline=false --package=npm@11.6.2 npm ls --all --json",
+          "exitCode": 0
+        }
+      ],
+      "localDependencies": true,
+      "lockSha256": "c0603874e53f3cc07d24079adcba141bac454e00a42d149a853ead89f9bae270"
+    }
+  }
+}
