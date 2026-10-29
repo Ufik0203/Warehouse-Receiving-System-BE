@@ -1,4 +1,4 @@
-%% Reconstructed from PROJECT_SPEC.md database design. See technical-spec.md for SQL constraints.
+%% Source design plus authorized product-edit-history extension. See technical-spec.md for SQL constraints.
 erDiagram
     User {
         uuid id PK
@@ -67,3 +67,17 @@ erDiagram
     Product ||--o{ InventoryTransaction : moves
     Receipt ||--|{ InventoryTransaction : contains
     ReceivingItem ||--o{ InventoryTransaction : fulfilled_by
+
+    ProductEditHistory {
+        uuid id PK
+        uuid product_id FK
+        uuid actor_id FK
+        varchar actor_name
+        timestamptz changed_at
+        varchar before_sku
+        varchar after_sku
+        varchar before_name
+        varchar after_name
+    }
+    Product ||--o{ ProductEditHistory : corrected_in
+    User ||--o{ ProductEditHistory : edits_with_name_snapshot

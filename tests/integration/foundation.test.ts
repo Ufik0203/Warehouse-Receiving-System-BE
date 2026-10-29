@@ -61,6 +61,11 @@ describe('real PostgreSQL/Redis foundation', () => {
     const composite = rows.filter(value => value.definition.includes('FOREIGN KEY (receipt_id, receiving_id)') || value.definition.includes('FOREIGN KEY (receiving_item_id, receiving_id, product_id)'));
     expect(composite).toHaveLength(2);
     for (const row of composite) expect(row.definition).toContain('ON DELETE RESTRICT');
+    for (const name of ['product_edit_history_effective_change', 'product_edit_history_sku_format', 'product_edit_history_names_nonempty']) expect(rows.some(value => value.conname === name)).toBe(true);
+    for (const name of ['product_edit_history_product_id_fkey', 'product_edit_history_actor_id_fkey']) {
+      const definition = rows.find(value => value.conname === name)?.definition;
+      expect(definition).toContain('ON DELETE RESTRICT'); expect(definition).toContain('ON UPDATE RESTRICT');
+    }
   });
   it('rejects invalid quantities and cross-document ledger links without persisting fixtures', async () => {
     const actor = await prisma.user.findFirstOrThrow();

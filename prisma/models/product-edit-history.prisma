@@ -1,0 +1,17 @@
+model ProductEditHistory {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  actorName  String   @map("actor_name") @db.VarChar(120)
+  changedAt  DateTime @default(dbgenerated("clock_timestamp()")) @map("changed_at") @db.Timestamptz(6)
+  beforeSku  String   @map("before_sku") @db.VarChar(40)
+  afterSku   String   @map("after_sku") @db.VarChar(40)
+  beforeName String   @map("before_name") @db.VarChar(120)
+  afterName  String   @map("after_name") @db.VarChar(120)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([productId, changedAt(sort: Desc), id(sort: Desc)])
+  @@index([actorId])
+  @@map("product_edit_history")
+}

@@ -136,3 +136,39 @@ Task 7 lokal selesai; bukan persetujuan untuk deploy publik. Requirement dengan 
 - [ ] Docker engine dimatikan secara nyata dan full SQL regression ulang: NOT_RUN.
 
 Panduan aktif development.md; bukti/history sebelumnya dipertahankan. Tidak menjalankan Git/GitHub.
+
+
+## Penyempurnaan setelah Task 7 ? edit produk (2026-10-30)
+
+Permintaan pengguna memperluas BR-P06 hanya untuk koreksi sku/name SUPERVISOR, tanpa delete/archive/active status. Progres awal sudah punya create/list/detail, tidak ada PATCH. Tidak menambah dependency, schema atau migration.
+
+- [x] PRD/keputusan history-current-label sebelum verifikasi; source PROJECT_SPEC.md tetap.
+- [x] PATCH strict partial schema, minimal field, middleware auth/CSRF/role existing, repository atomic update/unique DB constraint, mapper DTO existing.
+- [x] 404 PRODUCT_NOT_FOUND,409 SKU_ALREADY_EXISTS, own SKU allowed; invalid/dependency responses existing.
+- [x] UI prefill Edit/Simpan/Batal, validasi/error/pending/double-submit guard, useMutation/HeroUIv3, invalidate products/inventory/receivings/transactions termasuk detail.
+- [x] OpenAPI + API Markdown backend authority, hash manifest dan frontend identik; checker kini21 operasi,87 ID existing tetap.
+- [x] Lint/typecheck/build kedua aplikasi,19 unit +63 integration real PG/Redis +17 component +12 browser desktop/mobile.
+- [x] Existing received product, concurrent unique race, atomic conflict, immutable IDs/quantities/FK/receipt/balance dan receipt replay tanpa stok ganda diverifikasi.
+- [x] Proses runtime verifikasi dihentikan; dependency tes hanya stopped, volume/data dipertahankan.
+- [ ] Production Docker build ulang, HTTPS, load/fuzz dan browser/device lain: NOT_RUN pada penyempurnaan ini.
+
+Bukti rinci/percobaan awal ada di testing.md, tanpa menimpa laporan Task2?7. Tidak menjalankan Git/GitHub.
+
+
+## Lanjutan penyempurnaan Task7 ? Riwayat Edit Produk (2026-10-30)
+
+Melanjutkan edit yang sudah lulus, bukan mengulang/mengganti fiturnya. Scope tambahan diizinkan pengguna: log permanent dan halaman supervisor terpisah.
+
+- [x] Audit progres; keputusan log transaction/row lock/no-op/actor snapshot dan no backfill didokumentasikan.
+- [x] Model ProductEditHistory multi-file, forward migration CHECK/FK/index tanpa mengedit initial migration.
+- [x] Product lock + read-before + UPDATE + INSERT log atomik, actorID dari server; no-op/failure tidak log.
+- [x] GET product history strict pagination, supervisor only, repeatable snapshot list/count.
+- [x] Route /products/:id/history dan tombol Riwayat Edit supervisor, identitas/back/states/pagination; cache productHistory terpisah.
+- [x] Upgrade DB tes terisi mempertahankan tujuh tabel lama; fresh empty DB deploy dua migrasi, repeat deploy unchanged.
+- [x] Component20/20, unit19/19 dan integration67/67 nyata; browser14/14 desktop/mobile lulus; bukti dan batas aktual pada testing.md.
+- [x] OpenAPI/Markdown/manifest backend dan frontend tersinkron22 operasi; ERD/data-flow mengikuti transaksi baru.
+- [ ] Docker production rebuild/deployment, HTTPS dan browser lain pada penambahan ini: NOT_RUN.
+
+Bukti tahap edit awal/Task2?7 tetap historis; laporan baru product-history-* terpisah. Seluruh Git/GitHub manual pemilik. Data/volume/credential development/deployment tidak diubah.
+
+- [x] Browser history terpisah/21event pagination/operator403 dan semua regresi14/14 lulus; runtime tes dihentikan dan volume dipertahankan.

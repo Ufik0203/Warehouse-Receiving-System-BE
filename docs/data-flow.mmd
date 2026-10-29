@@ -1,4 +1,4 @@
-%% Reconstructed from PROJECT_SPEC.md receiving transaction and exported sequence labels.
+%% Receiving flow plus authorized separate product-edit-history flow.
 sequenceDiagram
     participant UI as React
     participant API as Express
@@ -42,3 +42,25 @@ sequenceDiagram
     Note over UI,DB: Database write failure rolls back every change
     Note over UI,API: Lost response after commit: retain key + payload and replay
     UI->>UI: Invalidate affected TanStack queries after confirmed receipt
+
+    participant Products as Product service
+    UI->>API: PATCH product with cookie, trusted Origin, CSRF and sku/name only
+    API->>DB: Reload supervisor authorization; derive actor from session
+    API->>Products: Validated product correction plus server actorId
+    Products->>DB: BEGIN; lock product FOR UPDATE; read before values
+    alt No effective label change
+        Products->>DB: COMMIT without audit row or product write
+    else Effective correction
+        Products->>DB: Read actor name; update product; insert separate product_edit_history
+        alt Any database failure
+            Products->>DB: ROLLBACK product and log
+        else Both writes succeed
+            Products->>DB: COMMIT product and log
+        end
+    end
+    Note over Products,DB: No inventory, receipt or receiving quantity writes
+    UI->>API: GET product history page (supervisor only)
+    API->>Products: Read strict page/limit
+    Products->>DB: REPEATABLE READ product exists, log list and count
+    Products-->>API: Paginated history with actor snapshot and before/after labels
+    API-->>UI: Separate product history response

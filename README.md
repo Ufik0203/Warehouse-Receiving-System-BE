@@ -234,8 +234,20 @@ README ini memuat instruksi operasional yang diperlukan; tidak membutuhkan pandu
 
 ## Keterbatasan
 
-Tidak ada public registration, reset/change password, restore user, edit/delete product, manual complete/cancel receipt atau stock adjustment. Log/audit error menyeluruh, matriks setiap UI state dan receipt in-flight tepat saat revocation belum seluruhnya diverifikasi. HTTPS/public hosting, Firefox/WebKit/Safari, mobile fisik, load/stress/SLA, fuzzing dan accessibility audit menyeluruh NOT_RUN. Warning internal pg query-in-flight dan Vite PURE/chunk besar tercatat pada testing; tidak dinyatakan selesai. Tidak ditemukan input build/unit/integration yang membutuhkan file docs di luar tujuh dokumen; report E2E baru ditulis ke folder ignored sebagai output, bukan input checkout.
+Tidak ada public registration, reset/change password, restore user, delete/arsip/status aktif product, manual complete/cancel receipt atau stock adjustment. Log/audit error menyeluruh, matriks setiap UI state dan receipt in-flight tepat saat revocation belum seluruhnya diverifikasi. HTTPS/public hosting, Firefox/WebKit/Safari, mobile fisik, load/stress/SLA, fuzzing dan accessibility audit menyeluruh NOT_RUN. Warning internal pg query-in-flight dan Vite PURE/chunk besar tercatat pada testing; tidak dinyatakan selesai. Tidak ditemukan input build/unit/integration yang membutuhkan file docs di luar tujuh dokumen; report E2E baru ditulis ke folder ignored sebagai output, bukan input checkout.
 
 ## Pemeriksaan README pada 2026-10-29
 
 PASS pemeriksaan statis nama npm scripts terhadap package.json, keberadaan template/config, tepat tujuh tautan dokumen submission yang tersedia, serta syntax seluruh blok PowerShell. Audit source/config tidak menemukan input build/test pada docs yang diabaikan; E2E menulis report/screenshot baru sebagai output. Secret environment lokal tidak ditemukan dalam isi README. Suite aplikasi dan startup/deployment dari checkout bersih tidak diulang pada pekerjaan dokumentasi ini: **NOT_RUN**. Hanya README backend/frontend diubah; tidak membuat server, mengubah konfigurasi, menjalankan Git, atau mengubah database/volume.
+
+## Penyempurnaan setelah Task 7: edit produk
+
+SUPERVISOR dapat memperbaiki SKU/nama melalui Edit pada daftar produk dan PATCH /api/v1/products/:id. Produk terpakai tetap boleh diedit; SKU unik, normalisasi/batas existing berlaku. Inventory/detail/history menampilkan label produk terkini, sedangkan receipt/stock/replay tidak berubah. Tidak menambah delete/arsip/status aktif. Kontrak terbaru pada docs/openapi.yaml dan hasil verifikasi2026-10-30 pada docs/testing.md.
+
+## Riwayat Edit Produk
+
+SUPERVISOR dapat membuka tombol **Riwayat Edit** pada daftar produk menuju `/products/:id/history`. Halaman khusus ini menampilkan identitas produk, waktu server, nama pelaku saat perubahan, field dan nilai sebelum/sesudah, serta loading/empty/error/pagination. GET `/api/v1/products/:id/history` supervisor-only memakai page/limit(default20,max100); bukan `/inventory/transactions`.
+
+Migrasi forward `202610300002_product_edit_history` menambah tabel permanen. Product update dan log ditulis dalam satu transaksi dengan row lock; no-op/failed edit tidak menghasilkan log. Actor soft-delete/rename tidak menghilangkan nama snapshot. Log hanya tersedia mulai fitur ini aktif; perubahan masa lalu tidak direkayasa. Tidak ada edit/delete log atau delete/archive produk. Receipt/stock/idempotency tidak berubah.
+
+Development npm run dev akan deploy migrasi pending sekali sebelum watcher; jangan reset database. Untuk runtime manual dari backend gunakan env target yang telah diperiksa dan npm run db:migrate:deploy sebelum npm start. Docker menggunakan job migrate pada image baru, lalu readiness kini memeriksa tabel log. Production Docker rebuild/deployment untuk fitur tambahan ini NOT_RUN; lihat docs/testing.md untuk verifikasi tes nyata.

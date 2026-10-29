@@ -116,7 +116,7 @@ Produk
 - BR-P03: Nama produk memiliki panjang 1–120 karakter setelah trim.
 - BR-P04: Satuan versi pertama hanya pcs.
 - BR-P05: Produk baru memiliki stok nol.
-- BR-P06: Perubahan dan penghapusan produk belum termasuk scope.
+- BR-P06: Setelah penyempurnaan Task 7, SUPERVISOR dapat memperbaiki sku/name produk existing; penghapusan, arsip dan status aktif produk tetap di luar scope.
 Penerimaan
 
 - BR-R01: Satu dokumen memiliki 1–50 produk berbeda.
@@ -212,3 +212,15 @@ Selama belum ada jawaban, implementasi mengikuti keputusan eksplisit dalam PRD i
 ## Boundary repository mandiri
 
 PRD ini mempertahankan semua requirement sistem. Implementasikan hanya scope repository backend. Aplikasi lain tetap boundary integrasi; jangan menambah role/fitur atau mengubah aturan bisnis. Source lokal dan bukti asal dijelaskan pada [provenance.md](provenance.md).
+
+
+## Penyempurnaan setelah Task 7: edit produk (2026-10-30)
+
+Diizinkan pengguna: hanya SUPERVISOR dapat PATCH sku/name, minimal satu field dan strict unknown-field rejection. Normalisasi SKU trim/uppercase, 1-40 ASCII [A-Z0-9_-]+, unik termasuk concurrent updates; menyimpan SKU sendiri bukan konflik. Nama trim, 1-120 Unicode code point. Produk terpakai tetap boleh diedit pada row/ID sama. Unit, stok, receiving quantity, receipt, ledger dan seluruh FK tidak berubah; tidak membuat produk pengganti atau snapshot. Riwayat/detail menerima SKU/nama produk terkini melalui relasi produk; receipt replay immutable berdasarkan ID/actor/payload, tidak berdasarkan label produk. Tidak menambah hapus/arsip/status aktif. BR-P06 lama diperluas oleh permintaan ini; PROJECT_SPEC.md dan bukti historis tidak diubah.
+
+
+## Tambahan setelah Task 7: Riwayat Edit Produk (2026-10-30)
+
+Permintaan pengguna melanjutkan edit SKU/name dengan log permanen yang TERPISAH dari penerimaan/inventory. Hanya SUPERVISOR membaca GET /api/v1/products/:id/history dan halaman /products/:id/history, diakses melalui Riwayat Edit pada daftar produk. Halaman memuat identitas produk, kembali ke produk, loading/empty/error dan pagination.
+
+Satu perubahan efektif menghasilkan satu kejadian: ID produk/pelaku, nama pelaku saat perubahan, waktu PostgreSQL, SKU/nama sebelum-sesudah. Actor berasal dari autentikasi server, tidak body client. No-op setelah normalisasi tidak membuat log; kegagalan tidak membuat log sukses. UPDATE dan INSERT log atomik, row lock serializes edits agar rantai before/after benar. Actor di-soft-delete tidak menghilangkan log/nama snapshot. Tidak ada update/delete log, delete/archive/active product, stock adjustment atau perubahan receipt/replay. Tidak merekonstruksi edit sebelum fitur log tersedia; produk existing memulai riwayat kosong dan perubahan selanjutnya dicatat. Pagination20 default/max100, urutan waktu DESC laluID DESC; pagination menghitung kejadian, bukan jumlah field.

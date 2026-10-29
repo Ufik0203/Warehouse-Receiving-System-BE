@@ -3,7 +3,7 @@ info:
   title: Warehouse Receiving System API
   version: 0.1.0
   description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Foundation health, four authentication endpoints and core products/receivings/inventory endpoints are implemented;
-    user management endpoints are also implemented. All 20 documented operations are available; runtime evidence is scoped in testing.md. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
+    user management endpoints are also implemented. All 22 documented operations are available; runtime evidence is scoped in testing.md. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
     text lengths use Unicode code points after documented field normalization; numeric limits are unchanged.
     Mutations require trusted Origin or Referer, Content-Type application/json even without a body, and session-bound
     CSRF including login. Dependency failures fail closed with 503. See technical-spec.md for session lifetimes
@@ -776,6 +776,129 @@ paths:
       - $ref: '#/components/parameters/Id'
       x-roles:
       - OPERATOR
+      - SUPERVISOR
+    patch:
+      operationId: updateProduct
+      tags:
+      - products
+      summary: Correct product SKU or name
+      description: "SUPERVISOR only. Strict body with at least one sku/name. Trim and uppercase SKU; trim name and count Unicode code points. Existing own SKU is allowed. Products already received remain editable; preserve identity, unit, inventory, quantities and transaction relationships. Receiving/inventory/history display current product labels. Atomic update and database unique constraint arbitrate concurrent SKU edits. Unknown query/body fields rejected. Missing product: 404 PRODUCT_NOT_FOUND. Duplicate SKU of another product: 409 SKU_ALREADY_EXISTS. Trusted Origin/Referer, JSON and CSRF required. Receipt replay unchanged. Effective edits now lock product and atomically persist before/after plus authenticated actor/name snapshot in product_edit_history; no-op after normalization creates no log. Failed update/log rolls back both. No log backfill for edits before this feature."
+      security:
+      - LocalSession: []
+      - SecureSession: []
+      responses:
+        '400':
+          $ref: '#/components/responses/Error400'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '429':
+          $ref: '#/components/responses/Error429'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProductDto'
+                required:
+                - data
+                additionalProperties: false
+              example:
+                data:
+                  id: 11111111-1111-4111-8111-111111111111
+                  sku: WDG-001
+                  name: Warehouse user
+                  unit: pcs
+                  createdAt: '2026-10-29T00:00:00Z'
+        '409':
+          $ref: '#/components/responses/Error409'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Csrf'
+      - name: Origin
+        in: header
+        schema:
+          type: string
+          format: uri
+        description: Must match APP_ORIGIN. If absent, a trusted Referer origin is required.
+      - name: Referer
+        in: header
+        schema:
+          type: string
+          format: uri
+        description: Used only when Origin is absent. Both absent or untrusted is rejected.
+      x-roles:
+      - SUPERVISOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductInput'
+            example:
+              sku: CORRECTED-001
+              name: Corrected product
+  /api/v1/products/{id}/history:
+    get:
+      operationId: listProductEditHistory
+      tags:
+      - products
+      summary: List product edit history
+      description: SUPERVISOR only. Separate permanent product-edit log; not a receipt
+        or inventory movement. Missing product:404 PRODUCT_NOT_FOUND; existing product
+        without logs:200 empty page. Strict page/limit query, default20/max100; changedAt
+        DESC,id DESC. Actor name is a snapshot at edit time and remains after rename
+        or soft deletion. No update/delete log operations.
+      security:
+      - LocalSession: []
+      - SecureSession: []
+      responses:
+        '400':
+          $ref: '#/components/responses/Error400'
+        '500':
+          $ref: '#/components/responses/Error500'
+        '429':
+          $ref: '#/components/responses/Error429'
+        '503':
+          $ref: '#/components/responses/Error503'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductEditHistoryDto'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                required:
+                - data
+                - pagination
+                additionalProperties: false
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Limit'
+      x-roles:
       - SUPERVISOR
   /api/v1/receivings:
     get:
@@ -1649,6 +1772,106 @@ components:
       required:
       - sku
       - name
+      additionalProperties: false
+    UpdateProductInput:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Trim and uppercase before matching ^[A-Z0-9_-]+$. Raw lowercase
+            input is normalized, not rejected.
+          x-normalized-pattern: ^[A-Z0-9_-]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Trim before validation; count Unicode code points, not UTF-16 units,
+            bytes or grapheme clusters.
+    ProductEditHistoryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        actorId:
+          type: string
+          format: uuid
+        actorName:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Name snapshot at change time; not joined to current user name.
+        changedAt:
+          type: string
+          format: date-time
+          description: PostgreSQL clock_timestamp() at log insert after acquiring the
+            product lock.
+        changedFields:
+          type: array
+          items:
+            type: string
+            enum:
+            - sku
+            - name
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+        before:
+          type: object
+          properties:
+            sku:
+              type: string
+              minLength: 1
+              maxLength: 40
+              description: Trim and uppercase before matching ^[A-Z0-9_-]+$. Raw lowercase
+                input is normalized, not rejected.
+              x-normalized-pattern: ^[A-Z0-9_-]+$
+            name:
+              type: string
+              minLength: 1
+              maxLength: 120
+              description: Trim before validation; count Unicode code points, not UTF-16
+                units, bytes or grapheme clusters.
+          required:
+          - sku
+          - name
+          additionalProperties: false
+        after:
+          type: object
+          properties:
+            sku:
+              type: string
+              minLength: 1
+              maxLength: 40
+              description: Trim and uppercase before matching ^[A-Z0-9_-]+$. Raw lowercase
+                input is normalized, not rejected.
+              x-normalized-pattern: ^[A-Z0-9_-]+$
+            name:
+              type: string
+              minLength: 1
+              maxLength: 120
+              description: Trim before validation; count Unicode code points, not UTF-16
+                units, bytes or grapheme clusters.
+          required:
+          - sku
+          - name
+          additionalProperties: false
+      required:
+      - id
+      - productId
+      - actorId
+      - actorName
+      - changedAt
+      - changedFields
+      - before
+      - after
       additionalProperties: false
     CreateReceivingInput:
       type: object

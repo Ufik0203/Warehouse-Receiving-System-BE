@@ -511,3 +511,25 @@ Dockerfiles/lockfile pada masing-masing root repository; Compose backend deploy/
 ### Startup development satu command
 
 Lihat development.md: npm run dev backend memvalidasi env/.env/override, memeriksa port3000 dan Docker, Compose project wrs-development-laptop healthy, Prisma generate, query target lalu migrate deploy/seed sekali sebelum watcher. Vite development localhost5175 strictPort, proxy127.0.0.1:3000 mempertahankan Origin. APP_ORIGIN5175/local cookie non-Secure. Mode test eksplisit mempertahankan alternate fixture proxy. Kontrak API/security tidak berubah. Root workspace registration lama dihapus minimal; dependency dan kedua lockfile aplikasi tetap.
+
+
+## Penyempurnaan setelah Task 7: edit produk (2026-10-30)
+
+Keputusan sebelum verifikasi: PATCH hanya sku/name oleh SUPERVISOR. Schema partial strict dari create, minimal satu; repository single SQL UPDATE dengan whitelist sku/name, service memetakan P2025 ke PRODUCT_NOT_FOUND404 dan P2002 ke SKU_ALREADY_EXISTS409. Tidak pre-check SKU yang rentan race; unique constraint existing tetap otoritatif. Single update atomik termasuk name jika SKU conflict. Mapper ProductDto existing dipertahankan; tidak mengubah schema, migration atau dependency.
+
+Inventory repository include product dan receiving detail include product menampilkan label produk TERKINI, termasuk ledger lama. Receipt mapper menyimpan/mengembalikan receivingItemId/productId/quantity, tidak label; payload hash/replay tidak berubah. Tidak membuat snapshot label, produk pengganti, balance baru atau mengubah hubungan/quantity/receipt.
+
+Frontend supervisor Edit -> prefilled SKU/name -> Simpan/Batal memakai DataForm/HeroUIv3 dan useAction(useMutation). Pending menonaktifkan edit/save/cancel, ref guard mencegah double-submit; error tetap pada form. Setelah commit invalidate seluruh prefix actor untuk products/inventory/receivings/transactions, termasuk detail/inactive queries; tidak optimistically mengubah stok. Refetch failure tetap success dengan refresh warning existing. Operator tidak melihat aksi dan server tetap menolak.
+
+Audit awal menemukan OpenAPI frontend tertinggal (metadata dan beberapa ketentuan R-10/R-11/Task5), sementara backend authority lebih lengkap. Sinkronisasi kali ini memakai backend sebagai sumber, memperbarui kedua artifact kontrak dan manifest identik; bukan mengambil behavior dari salinan frontend lama.
+
+
+## Tambahan riwayat edit produk setelah Task7 (2026-10-30)
+
+Menggantikan keputusan single UPDATE pada penyempurnaan edit sebelumnya: service kini READ COMMITTED transaction, repository SELECT products.id FOR UPDATE, baca label aktual, deteksi normalized no-op, baca actor name dari User berdasarkan req.user.id, UPDATE sku/name, INSERT ProductEditHistory, COMMIT. Semua operasi memakai transaction client yang sama. Unique SKU tetap database arbiter; log failure membatalkan product dan sebaliknya. In-flight authorization mengikuti BR-U12 existing; request baru tetap reload role/status/authVersion.
+
+Model multi-file product-edit-history.prisma/table product_edit_history: UUIDid/product_id/actor_id, snapshot actor_name varchar120, changed_at timestamptz6 default clock_timestamp(), before/after_sku varchar40 dan before/after_name varchar120. Clock timestamp saat insert dipilih agar request yang menunggu lock tidak memakai waktu awal transaksi untuk ordering. FK produk/actor RESTRICT update/delete; soft delete User tidak memutus FK dan actorName tidak di-join ulang. Index(product_id,changed_atDESC,idDESC), index(actor_id), CHECK effective change, SKU format dan panjang nama nonempty. Migrasi forward202610300002_product_edit_history menambah tabel saja, tidak mengubah applied initial migration/data lama. Log historis sebelum fitur tidak direkayasa/backfill. Tidak ada mutation API untuk log; bukan fitur stock/receiving.
+
+GET /api/v1/products/:id/history supervisor-only, strict page/limit existing, paginated DTO, REPEATABLE READ untuk exists/list/count satu snapshot. Route UI /products/:id/history dalam Protected supervisor, tombol Riwayat Edit pada daftar, identitas produk/current label, kembali, event table before/after dan actor snapshot/time, loading/empty/error/retry/pagination. Resource cache productHistory terpisah dari transactions; edit invalidate productHistory beserta products/inventory/receivings/transactions. Tidak mencampur audit dengan ledger. Tidak menambah dependency.
+
+Readiness LIMIT0 juga memeriksa product_edit_history; image/API versi baru tidak menyatakan ready bila migrasi tabel log belum tersedia. Tidak mengubah health response contract.

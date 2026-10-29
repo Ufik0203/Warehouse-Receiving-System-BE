@@ -18,6 +18,7 @@ model User {
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   receivings   Receiving[]
   receipts     Receipt[]
+  productEdits ProductEditHistory[]
 
   @@index([role, isActive])
   @@index([createdAt, id])

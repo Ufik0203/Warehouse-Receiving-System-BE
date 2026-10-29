@@ -8,6 +8,7 @@ import { createRedis } from '../../src/lib/redis.js';
 import { createReceivingsRepository } from '../../src/modules/receivings/receivings.repository.js';
 import { createReceivingsService } from '../../src/modules/receivings/receivings.service.js';
 import { createProductsService } from '../../src/modules/products/products.service.js';
+import { createProductsRepository } from '../../src/modules/products/products.repository.js';
 import { createInventoryService } from '../../src/modules/inventory/inventory.service.js';
 import type { Prisma } from '../../src/generated/prisma/client.js';
 
@@ -84,6 +85,129 @@ async function state(doc: Document) {
 }
 
 describe('core receiving HTTP contract on real PostgreSQL/Redis', () => {
+  const patchProduct = (app: App, user: Actor, id: string) => request(app).patch(`/api/v1/products/${id}`).set('Cookie', user.sid).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', user.token);
+  it('records effective product corrections with server actor snapshots and rejects no-op/failed/faked actor logs', async () => {
+    const { app, supervisor, operator, products, doc } = await setup(2); const id = products[0]!;
+    const before = await prisma.product.findUniqueOrThrow({ where: { id } }); const oldState = await state(doc);
+    await read(app, operator, `/products/${id}/history`).expect(403);
+    await request(app).get(`/api/v1/products/${id}/history`).expect(401);
+    const empty = await read(app, supervisor, `/products/${id}/history`).expect(200);
+    expect(empty.body.data).toEqual([]); expect(empty.body.pagination).toMatchObject({ total: 0, page: 1, limit: 20 });
+    await patchProduct(app, supervisor, id).send({ sku: ` ${before.sku.toLowerCase()} `, name: ` ${before.name} ` }).expect(200);
+    expect(await prisma.productEditHistory.count({ where: { productId: id } })).toBe(0);
+    await patchProduct(app, supervisor, id).send({ name: 'After', actorId: operator.id }).expect(400);
+    await patchProduct(app, supervisor, id).send({ name: 'After', changedAt: '2000-01-01T00:00:00Z' }).expect(400);
+    await patchProduct(app, supervisor, id).send({ name: 'After' }).expect(200);
+    const history = await read(app, supervisor, `/products/${id}/history`).expect(200);
+    expect(history.body.data).toHaveLength(1);
+    expect(history.body.data[0]).toMatchObject({ productId: id, actorId: supervisor.id,
+      actorName: (await prisma.user.findUniqueOrThrow({ where: { id: supervisor.id } })).name,
+      changedFields: ['name'], before: { sku: before.sku, name: before.name }, after: { sku: before.sku, name: 'After' } });
+    expect(Number.isFinite(Date.parse(history.body.data[0].changedAt))).toBe(true);
+    await patchProduct(app, supervisor, id).send({ name: ' After ' }).expect(200);
+    const other = await prisma.product.findUniqueOrThrow({ where: { id: products[1]! } });
+    await patchProduct(app, supervisor, id).send({ sku: other.sku, name: 'Must not log' }).expect(409);
+    expect(await prisma.productEditHistory.count({ where: { productId: id } })).toBe(1);
+    expect(await state(doc)).toBe(oldState);
+    await read(app, supervisor, `/products/${randomUUID()}/history`).expect(404);
+    await read(app, supervisor, '/products/invalid/history').expect(400);
+    await read(app, supervisor, `/products/${id}/history`).query({ page: 0 }).expect(400);
+    await read(app, supervisor, `/products/${id}/history`).query({ limit: 101 }).expect(400);
+    await read(app, supervisor, `/products/${id}/history`).query({ q: 'unknown' }).expect(400);
+  });
+  it('serializes product corrections into an accurate before-after chain and paginates events', async () => {
+    const { app, supervisor, products } = await setup(); const id = products[0]!;
+    const original = await prisma.product.findUniqueOrThrow({ where: { id } });
+    const results = await Promise.all(['Concurrent A', 'Concurrent B'].map(name => patchProduct(app, supervisor, id).send({ name })));
+    expect(results.map(result => result.status)).toEqual([200, 200]);
+    const rows = await prisma.productEditHistory.findMany({ where: { productId: id }, orderBy: [{ changedAt: 'asc' }, { id: 'asc' }] });
+    expect(rows).toHaveLength(2); expect(rows[0]?.beforeName).toBe(original.name); expect(rows[1]?.beforeName).toBe(rows[0]?.afterName);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id } })).name).toBe(rows[1]?.afterName);
+    const first = await read(app, supervisor, `/products/${id}/history`).query({ page: 1, limit: 1 }).expect(200);
+    const second = await read(app, supervisor, `/products/${id}/history`).query({ page: 2, limit: 1 }).expect(200);
+    expect(first.body.pagination).toEqual({ page: 1, limit: 1, total: 2 });
+    expect(first.body.data[0].id).toBe(rows[1]?.id); expect(second.body.data[0].id).toBe(rows[0]?.id);
+  });
+  it('rolls back both product and log after a real PostgreSQL failure following the history insert', async () => {
+    const { supervisor, products, doc } = await setup(); const id = products[0]!;
+    const before = await prisma.product.findUniqueOrThrow({ where: { id } }); const stock = await state(doc);
+    const repository = createProductsRepository(); const add = repository.addHistory; let observed = false;
+    vi.spyOn(repository, 'addHistory').mockImplementation(async (tx, data) => {
+      const log = await add(tx, data);
+      observed = (await tx.product.findUniqueOrThrow({ where: { id } })).name === 'Rollback correction' && await tx.productEditHistory.count({ where: { productId: id } }) === 1;
+      await tx.$executeRaw`UPDATE product_edit_history SET after_sku=before_sku, after_name=before_name WHERE id=${log.id}::uuid`;
+      return log;
+    });
+    await expect(createProductsService(prisma, repository).update(id, { name: 'Rollback correction' }, supervisor.id)).rejects.toMatchObject({ status: 503 });
+    expect(observed).toBe(true); expect(await prisma.product.findUniqueOrThrow({ where: { id } })).toEqual(before);
+    expect(await prisma.productEditHistory.count({ where: { productId: id } })).toBe(0); expect(await state(doc)).toBe(stock);
+  });
+  it('retains original editor name and history after actor rename and soft deletion', async () => {
+    const { app, supervisor, products } = await setup(); const id = products[0]!;
+    const email = `${randomUUID()}@edit-history.test`; const password = randomUUID();
+    const user = await post(app, supervisor, '/users').send({ name: 'Editor snapshot', email, password, role: 'SUPERVISOR' }).expect(201);
+    const initial = await request(app).get('/api/v1/auth/csrf-token').expect(200);
+    const login = await request(app).post('/api/v1/auth/login').set('Cookie', sessionCookie(initial)).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', String(initial.body.data.csrfToken)).send({ email, password }).expect(200);
+    const editor = { sid: sessionCookie(login), token: String(login.body.data.csrfToken), id: String(user.body.data.id) };
+    await patchProduct(app, editor, id).send({ name: 'Edited by snapshot actor' }).expect(200);
+    await request(app).patch(`/api/v1/users/${editor.id}`).set('Cookie', supervisor.sid).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', supervisor.token).send({ name: 'Renamed actor' }).expect(200);
+    await request(app).delete(`/api/v1/users/${editor.id}`).set('Cookie', supervisor.sid).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', supervisor.token).set('Content-Type', 'application/json').expect(204);
+    const history = await read(app, supervisor, `/products/${id}/history`).expect(200);
+    expect(history.body.data[0]).toMatchObject({ actorId: editor.id, actorName: 'Editor snapshot' });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: editor.id } })).deletedAt).not.toBeNull();
+  });
+  it('allows supervisor correction of a received product while preserving receipt replay and all stock relationships', async () => {
+    const { app, supervisor, operator, products, doc } = await setup();
+    const id = products[0]!; const key = randomUUID();
+    const original = await receive(app, operator, doc, 10, key).expect(201);
+    const before = await state(doc); const productBefore = await prisma.product.findUniqueOrThrow({ where: { id } });
+    const sku = `EDIT-${randomUUID().slice(0, 32)}`;
+    const edited = await patchProduct(app, supervisor, id).send({ sku: ` ${sku.toLowerCase()} `, name: ` ${'😀'.repeat(120)} ` }).expect(200);
+    expect(edited.body.data).toMatchObject({ id, sku: sku.toUpperCase(), name: '😀'.repeat(120), unit: 'pcs', createdAt: productBefore.createdAt.toISOString() });
+    expect(await state(doc)).toBe(before);
+    const history = await read(app, operator, '/inventory/transactions').query({ productId: id }).expect(200);
+    expect(JSON.stringify(history.body)).toContain(sku.toUpperCase());
+    const detail = await read(app, operator, `/receivings/${doc.id}`).expect(200);
+    expect(JSON.stringify(detail.body)).toContain(sku.toUpperCase());
+    const replay = await receive(app, operator, doc, 10, key).expect(200);
+    expect(replay.body).toEqual(original.body); expect(replay.headers['idempotency-replayed']).toBe('true');
+    expect(await state(doc)).toBe(before);
+    await patchProduct(app, supervisor, id).send({ sku: sku.toUpperCase() }).expect(200);
+    await patchProduct(app, supervisor, id).send({ name: 'Name-only correction' }).expect(200);
+  });
+  it('protects product edit by authentication, supervisor authorization and CSRF', async () => {
+    const { app, supervisor, operator, products } = await setup(); const id = products[0]!;
+    await request(app).patch(`/api/v1/products/${id}`).set('Origin', environment.APP_ORIGIN).send({ name: 'Denied' }).expect(403);
+    const anonymous = await request(app).get('/api/v1/auth/csrf-token').expect(200);
+    await request(app).patch(`/api/v1/products/${id}`).set('Cookie', sessionCookie(anonymous)).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', String(anonymous.body.data.csrfToken)).send({ name: 'Denied' }).expect(401);
+    await read(app, supervisor, `/products/${id}`).expect(200);
+    await patchProduct(app, operator, id).send({ name: 'Denied' }).expect(403);
+    await request(app).patch(`/api/v1/products/${id}`).set('Cookie', supervisor.sid).set('Origin', environment.APP_ORIGIN).send({ name: 'Denied' }).expect(403);
+    await request(app).patch(`/api/v1/products/${id}`).set('Cookie', supervisor.sid).set('Origin', environment.APP_ORIGIN).set('X-CSRF-Token', 'invalid').send({ name: 'Denied' }).expect(403);
+  });
+  it('rejects empty, invalid and unknown edit fields, missing products and duplicate SKU atomically', async () => {
+    const { app, supervisor, products } = await setup(2); const id = products[0]!;
+    const before = await prisma.product.findUniqueOrThrow({ where: { id } });
+    for (const input of [{}, { sku: '' }, { sku: 'bad space' }, { sku: 'x'.repeat(41) }, { name: ' ' }, { name: '😀'.repeat(121) }, { unit: 'pcs' }, { id }, { sku: null }, { name: 123 }, { name: 'Changed', stock: 99 }]) {
+      await patchProduct(app, supervisor, id).send(input).expect(400);
+    }
+    const missing = await patchProduct(app, supervisor, randomUUID()).send({ name: 'X' }).expect(404);
+    expect(missing.body.error.code).toBe('PRODUCT_NOT_FOUND');
+    await patchProduct(app, supervisor, 'not-a-uuid').send({ name: 'X' }).expect(400);
+    const other = await prisma.product.findUniqueOrThrow({ where: { id: products[1]! } });
+    const conflict = await patchProduct(app, supervisor, id).send({ sku: other.sku.toLowerCase(), name: 'Must roll back' }).expect(409);
+    expect(conflict.body.error.code).toBe('SKU_ALREADY_EXISTS');
+    expect(await prisma.product.findUniqueOrThrow({ where: { id } })).toEqual(before);
+  });
+  it('lets the unique database constraint arbitrate concurrent product SKU corrections', async () => {
+    const { app, supervisor, products } = await setup(2); const sku = `RACE-${randomUUID().slice(0, 32)}`;
+    const responses = await Promise.all(products.map(id => patchProduct(app, supervisor, id).send({ sku, name: 'Winner' })));
+    expect(responses.map(response => response.status).sort()).toEqual([200, 409]);
+    expect(responses.find(response => response.status === 409)?.body.error.code).toBe('SKU_ALREADY_EXISTS');
+    expect(await prisma.product.count({ where: { sku: sku.toUpperCase() } })).toBe(1);
+    const loser = products[responses.findIndex(response => response.status === 409)]!;
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: loser } })).name).not.toBe('Winner');
+  });
   it('enforces roles, CSRF and strict input; product and zero balance are created atomically', async () => {
     const app = context(); const operator = await actor(app); const supervisor = await actor(app, 'SUPERVISOR');
     await request(app).get('/api/v1/products').expect(401);
@@ -301,7 +425,7 @@ describe('real transaction concurrency and snapshot isolation', () => {
   it('returns controlled dependency errors from each business service when PostgreSQL is unavailable', async () => {
     const badUrl = new URL(environment.DATABASE_URL); badUrl.port = '1'; const bad = createPrisma(badUrl.toString());
     try {
-      for (const operation of [() => createProductsService(bad).detail(randomUUID()), () => createReceivingsService(bad).detail(randomUUID()), () => createInventoryService(bad).balances({ page: 1, limit: 20 })]) await expect(operation()).rejects.toMatchObject({ status: 503 });
+      for (const operation of [() => createProductsService(bad).detail(randomUUID()), () => createProductsService(bad).update(randomUUID(), { name: 'Correction' }, randomUUID()), () => createProductsService(bad).history(randomUUID(), { page: 1, limit: 20 }), () => createReceivingsService(bad).detail(randomUUID()), () => createInventoryService(bad).balances({ page: 1, limit: 20 })]) await expect(operation()).rejects.toMatchObject({ status: 503 });
     } finally { await bad.$disconnect(); }
   });
 });
