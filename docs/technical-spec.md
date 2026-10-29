@@ -1,6 +1,6 @@
 # Technical Specification
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2, autentikasi/security Task 3 dan core receiving Task 4 telah diimplementasikan; user management belum tersedia. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2, autentikasi/security Task 3 dan core receiving Task 4 telah diimplementasikan; user management Task 5 juga telah diimplementasikan. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
 
 ## Baseline teknologi
 
@@ -444,7 +444,7 @@ Frontend adalah aplikasi terpisah melalui HTTP; tidak mengimpor Prisma Client da
 - Deployment memakai migrate deploy, development memakai migrate dev. Jangan db push sebagai deployment atau mengubah applied migration.
 - Seluruh CHECK dan composite FK sudah ada pada initial migration; pertahankan bytes semua migrasi. Cardinality child/balance serta invariant status/ledger ditegakkan service yang direncanakan, bukan mengarang trigger baru.
 - Compose lokal hanya postgres/redis; API Dockerfile, migration job deployment dan public deployment belum selesai. Jangan menghapus database atau volume existing untuk membuat tes lulus.
-- Health/auth dan products/receivings/inventory tersedia; user management Task 5 belum diimplementasikan.
+- Health/auth dan products/receivings/inventory tersedia; user management Task 5 kini tersedia.
 - Desain R-10/R-11/R-13 diputuskan pada [persiapan Task 4](task4-readiness.md); implementasi dan pengujian bisnis tetap NOT_RUN.
 - Semua pekerjaan Git/GitHub hanya manual pengguna; agent tidak menjalankan perintah Git atau tool GitHub.
 
@@ -481,3 +481,16 @@ Receipt canonical hash memakai JSON object berurutan receivingId, actorId, items
 DatabaseOperation mempertahankan AppError domain, memetakan Prisma dependency errors ke 503 serta write conflict/deadlock/lock timeout yang telah rollback ke TRANSACTION_RETRY_REQUIRED. Unexpected programming error diteruskan ke safe 500 handler; raw error/SQL/credential tidak masuk respons.
 
 Tidak ada dependency/schema/migrasi tambahan. PostgreSQL adapter Prisma 7.10.1 dengan pg 8.23.1 mengeluarkan warning query-in-flight pada internal runtime; tes aktual lulus, namun upgrade driver ke pg 9 perlu verifikasi ulang. Source aplikasi tidak memakai Promise.all untuk query dalam satu transaction client. Jangan menonaktifkan warning atau mengganti versi tanpa bukti.
+
+
+## Implementasi Task 5 dan batas keputusan
+
+Users memiliki schema/repository/mapper/service/controller/route, menggunakan common validation/errors, authorize supervisor dan mapper DTO auth yang sama. Repository memilih field identitas + authVersion internal, bukan passwordHash untuk read/update. Password hanya di-hash dengan helper Task 3 di luar transaksi sebelum create; tidak masuk repository sebagai plaintext. Email trim/lowercase sebelum format/length validation. Teks nama dihitung code point setelah trim; password 12-128 code point tanpa trim.
+
+Setiap mutation memakai READ COMMITTED Prisma interactive transaction dan pg_advisory_xact_lock(735910001), shared dengan seed. Setelah lock, repository membaca ulang actor: masih ada, supervisor, aktif, tidak deleted; selain itu 403 FORBIDDEN, tanpa write. Seluruh target lookup, write dan active-supervisor count menggunakan transaction client yang sama. Recheck ini khusus mutation user, sesuai BR-U12; tidak mengubah semantik in-flight receipt.
+
+Urutan target mutation: missing target 404 USER_NOT_FOUND; PATCH deleted target 409 USER_DELETED; self-demotion/deactivation/deletion 409 SELF_ACCOUNT_RESTRICTION sebelum write. Setelah perubahan, count supervisor aktif tidak-deleted wajib >=1; pelanggaran 409 LAST_ACTIVE_SUPERVISOR membatalkan transaksi. Self restriction tetap berlaku meskipun ada supervisor lain. Ini memperjelas precedence teknis tanpa melonggarkan BR-U09/U10. Delete target sudah deleted tidak melakukan write/version increment; actor recheck/invariant tetap berlaku.
+
+Role/status yang benar-benar berbeda menaikkan authVersion satu kali dalam write yang sama, termasuk bila keduanya berubah sekaligus. Nama saja atau role/status identik tidak menaikkan versi. Delete pertama isActive=false/deletedAt/authVersion+1; delete ulang mempertahankan updatedAt/deletedAt/version. FK historical tetap RESTRICT dan row user tidak dihapus. Keunikan email tetap mencakup deleted. Error unique create dipetakan EMAIL_ALREADY_EXISTS; kegagalan DB/rollback tetap memakai common handler.
+
+List data/count memakai REPEATABLE READ untuk snapshot pagination. Tidak ada schema/migration/dependency baru. Pembuktian lock wait, concurrency, revocation dan rollback ada pada testing.md; production stress/browser bukan cakupan bukti ini.

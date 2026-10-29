@@ -320,3 +320,77 @@ Tidak ada blocker spesifikasi/runtime yang ditemukan untuk memulai Task 5 setela
 - package-lock.json SHA256 51f39b285038a3c10f4a8f231444bd1cea888ab9b17ec4aa2cdf8a85070b31c4; tidak ada dependency baru.
 
 Kontrak hanya memperbarui metadata ketersediaan core endpoints; desain error/length/snapshot, DTO, role/status/security requirement dipertahankan. Sumber backend api-contract.md/openapi.yaml dan contract-version.json telah diperbarui; ketiga file frontend dengan nama yang sama perlu disalin manual sesuai api-sync.md. Tidak mengklaim replika sudah sinkron.
+
+
+## Bukti aktual Task 5
+
+Tanggal 2026-10-29, Asia/Jakarta. Scope hanya user management backend. Audit awal belum menemukan modul users; auth/core receiving existing dipertahankan. Tidak menjalankan Git/GitHub, mengubah metadata Git, frontend/folder induk, source PROJECT_SPEC.md, dependency/lockfile atau applied migration. Tidak melanjutkan Task 6. Bukti Task 2/3/4 serta status NOT_RUN historis tetap dipertahankan, bukan ditimpa sebagai PASS baru.
+
+### Lingkungan dan isolasi
+
+Windows, Node 24.12.0, baseline npm 11.6.2, seluruh binary/dependency lokal backend. Docker engine 29.8.0; PostgreSQL/Redis Task 4 existing healthy. Compose backend disiapkan sebagai project baru `wrs-task5-bc403960`, PostgreSQL 17.11 host 55442/database `wrs_task5_bc403960_test`, Redis 8.2.11 host 56392/namespace `wrs:test:task5:bc403960` ditambah UUID per test context. Env/.env.task5 lokal diabaikan dan credential tidak dicetak sebagai evidence. Dua container akhir healthy dan dibiarkan berjalan. Database/volume existing tidak dihapus; tidak FLUSHALL. Akun/fixture baru tetap berada dalam database tes, identifier dibuat unik agar re-run tidak memerlukan penghapusan data.
+
+### Command dan hasil aktual
+
+Command berikut dijalankan dari root backend menggunakan binary lokal. BACKEND_ENV_FILE menunjuk env/.env.task5 untuk migrate/seed/integration.
+
+| Command | Hasil |
+| --- | --- |
+| docker info --format '{{.ServerVersion}}' | PASS exit 0, engine 29.8.0 |
+| docker compose --env-file env/.env.task4 ps | PASS exit 0, dependency existing healthy |
+| docker compose --env-file env/.env.task5 up -d --wait postgres redis | PASS exit 0, dependency terisolasi healthy |
+| node node_modules/prisma/build/index.js migrate deploy | PASS exit 0, initial migration existing diterapkan pada DB baru; deploy ulang: No pending migrations to apply |
+| node node_modules/tsx/dist/cli.mjs prisma/seeds/index.ts | PASS exit 0, akun awal berasal dari env |
+| node node_modules/eslint/bin/eslint.js . | PASS exit 0 |
+| node node_modules/typescript/bin/tsc --noEmit | PASS exit 0, TypeScript strict/skipLibCheck=false |
+| node node_modules/vitest/vitest.mjs run tests/integration/users.test.ts | PASS exit 0, 13 tes khusus sebelum tambahan boundary email pada run final |
+| node node_modules/vitest/vitest.mjs run --reporter=default --reporter=json --outputFile=docs/evidence/task5-tests.json | PASS exit 0, 7 file, 71 tes, 17.43 detik: users 13 + auth 19 + core receiving 20 + foundation 7 + unit 12 |
+| node node_modules/prisma/build/index.js validate --config prisma.generate.config.ts | PASS exit 0, schemas valid |
+| node node_modules/prisma/build/index.js generate --config prisma.generate.config.ts | PASS exit 0, Client 7.10.1 |
+| node node_modules/typescript/bin/tsc -p tsconfig.build.json | PASS exit 0, build final |
+| docker compose --env-file env/.env.task5 ps | PASS exit 0, postgres healthy/redis healthy |
+| python -m openapi_spec_validator docs/openapi.yaml | PASS exit 0, docs/openapi.yaml: OK |
+| python docs/validation/check-task4-readiness.py | PASS exit 0, desain 404/Unicode/snapshot dan hash kontrak/sumber konsisten |
+| python docs/validation/check-docs.py | PASS exit 0, 87 IDs, 39 archive hashes, 20 operasi, link lokal dan manifest kontrak cocok |
+
+Validator Python memakai PYTHONUTF8=1 dan PYTHONPATH=.cache/doc-tools yang sudah tersedia; tidak menginstal dependency baru. Detail assertion/durasi: [task5-tests.json](evidence/task5-tests.json). Ringkasan lingkungan/hasil/hash evidence terdahulu: [task5-verification.json](evidence/task5-verification.json).
+
+### Bukti perilaku yang lulus
+
+| Area | Bukti aktual |
+| --- | --- |
+| Authorization/security | GET tanpa session 401. OPERATOR ditolak 403 pada list/detail/create/PATCH/DELETE. Supervisor membuat kedua role. Semua mutation termasuk DELETE tanpa body ditolak 403 tanpa CSRF. Middleware session/global/user limiter Task 3 tetap digunakan. |
+| R-10 | Missing UUID target GET/PATCH/DELETE menghasilkan 404 USER_NOT_FOUND; UUID/query invalid tetap 400. Deleted row masih ada dan detail 200, bukan not-found. |
+| R-11 dan password | Nama astral 120 round trip DB, 121 ditolak; combining mark 120 code point diterima. Password astral 12/128 diterima, 11/129 ditolak. Email 254 diterima, 255 ditolak. Nama/email trim dan lowercase sesuai field; password whitespace tidak diubah, Argon2 verify password asli true dan versi trim false. |
+| Whitelist/DTO | Unknown field/create authVersion, role tambahan, update kosong, email/password/deletedAt via PATCH dan boolean string ditolak. Password di DB berupa hash, bukan plaintext. Create/list/detail memakai tepat delapan field UserDto; authVersion/hash/session internals tidak masuk response. |
+| Uniqueness | Email dengan variasi kapitalisasi conflict 409 EMAIL_ALREADY_EXISTS, termasuk saat pemilik email telah soft-deleted. |
+| List/filter/sorting | List default meliputi aktif/nonaktif tanpa deleted; filter role/isActive/includeDeleted literal, pagination dan createdAt DESC/id DESC diverifikasi. includeDeleted menampilkan deleted; detail supervisor tetap dapat membacanya. |
+| Self restriction | Self-demotion, self-disable (termasuk perubahan nama bersamaan) dan self-delete 409 SELF_ACCOUNT_RESTRICTION; seluruh row tetap identik setelah ditolak. |
+| Last supervisor/concurrency | Fixture tes mengisolasi dua supervisor aktif, menonaktifkan sementara supervisor lain lalu mengembalikannya dalam finally. Dua transaksi cross-demotion bersamaan: satu berhasil, satu FORBIDDEN setelah recheck; tersisa tepat satu supervisor. Last actor tetap tidak dapat demote/disable/delete diri. Setelah setiap user test count aktif >=1. |
+| Guard LAST_ACTIVE_SUPERVISOR | Test-only repository injection membuat transaksi menonaktifkan semua supervisor setelah update, lalu count nyata nol. Guard menghasilkan 409 LAST_ACTIVE_SUPERVISOR dan seluruh transaksi rollback. Tidak menambah hook/flag production dan tidak mengklaim ini input API normal. |
+| Actor menunggu lock | Holder transaksi memperoleh advisory lock, mutation kedua antre. pg_backend_pid dan pg_locks memastikan advisory lock kedua NOT granted (bukan sekadar sleep). Holder mengubah status, role atau deleted actor lalu commit; mutation yang menunggu ditolak 403 setelah lock, target name tidak berubah. Diuji untuk ketiga jenis kehilangan akses dengan PostgreSQL nyata. |
+| Atomic authVersion | Nama dan role/status no-op tidak mengubah versi/session. Perubahan role+status bersama menaikkan versi sekali; aktivasi ulang dan role change berikutnya mencabut session lama pada /auth/me. Soft delete menaikkan versi dan old SID ditolak. |
+| Soft delete/history | Delete pertama isActive=false/deletedAt/version+1. Deleted login ditolak generik 401, PATCH/restore ditolak 409 USER_DELETED. Delete ulang 204 tanpa perubahan deletedAt/updatedAt/version. FK receiving/receipt/ledger tetap ada; history actor dan receiving.createdBy tetap dapat ditelusuri. |
+| Late failure | Setelah repository benar-benar mengubah role/name/version, SQL auth_version=0 memicu CHECK failure PostgreSQL. Respons service 503 dan seluruh row termasuk authVersion identik sebelum operasi. Tidak ada partial update. |
+| Regresi | Seluruh 19 auth integration, 20 receiving integration, 7 foundation dan 12 unit lulus ulang pada database tes Task 5. Concurrency/idempotency/rollback/reconciliation inventory tetap lulus. |
+
+Foundation seed test disesuaikan karena Task 5 menambah akun secara sah: ia memeriksa tepat dua akun seed berdasarkan email, bukan mengasumsikan seluruh database hanya punya dua user. Perbandingan seluruh row sebelum/sesudah seed ulang dan verifikasi password seed tetap dilakukan, sehingga akun tambahan/hash existing tidak dihapus atau ditimpa agar tes lulus.
+
+### Keputusan, requirement dan batas bukti
+
+Tidak mengubah requirement. Service mutation memakai account lock existing 735910001, actor recheck, seluruh operasi melalui transaction client. Hash di luar transaksi/lock. Self restriction diperiksa sebelum write; final count menjaga minimal satu supervisor. Perubahan name saja/no-op tidak revoke; role/status aktual revoke sekali. Detail keputusan urutan pada technical-spec.md. R-10/R-11 kini punya bukti user-management di atas; R-13 tidak berubah dan regresi receiving tetap lulus.
+
+Requirement scope backend yang ditangani: FR-USER-01..05, US-02/03/04, BR-U01..12, serta NFR-01/02/04/05/10 terkait. Ini bukan klaim seluruh 87 requirement atau behavior frontend/E2E/deployment sudah PASS.
+
+Warning deprecation pg 8.23.1 dari jalur internal Prisma/adapter yang sudah dicatat Task 4 masih muncul saat relational queries. Tidak disembunyikan atau dianggap hilang; semua 71 tes lulus pada versi pinned. Tidak mengubah dependency untuk menutupi warning. Upgrade pg 9 dan diagnosis scheduling internal lebih lanjut belum diuji.
+
+| Pemeriksaan tersisa | Status |
+| --- | --- |
+| Frontend contract comparison/sync dan UI/browser/E2E | NOT_RUN, frontend tidak diubah; pemilik menyalin api-contract.md, openapi.yaml, contract-version.json secara identik manual |
+| Task 6 | NOT_RUN, tidak dilanjutkan |
+| Deployment Linux/nginx/TLS/container API dan stress/load berkepanjangan | NOT_RUN |
+| Forced deadlock/lock timeout nyata, restart host/API dan full secret-log fuzzing | NOT_RUN; batas bukti Task 3/4 tetap |
+| Mematikan PostgreSQL/Redis server fisik saat in-flight request | NOT_RUN; outage/client-failure regression existing tetap lulus |
+| Fresh isolated npm ci atau audit dependency baru Task 5 | NOT_RUN, tidak ada dependency/lockfile baru |
+
+Tidak ada blocker backend yang ditemukan untuk memulai Task 6 setelah instruksi pengguna. Frontend belum dikerjakan dan artefak kontraknya belum dibandingkan. Metadata ketersediaan endpoint kini menyatakan seluruh 20 operasi tersedia; bentuk DTO, security, error/status dan business rules tetap. Sumber backend Markdown/OpenAPI dan manifest telah selaras/divalidasi. Bukti task sebelumnya tidak ditimpa.

@@ -3,7 +3,7 @@ info:
   title: Warehouse Receiving System API
   version: 0.1.0
   description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Foundation health, four authentication endpoints and core products/receivings/inventory endpoints are implemented;
-    user management endpoints remain planned. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
+    user management endpoints are also implemented. All 20 documented operations are available; runtime evidence is scoped in testing.md. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
     text lengths use Unicode code points after documented field normalization; numeric limits are unchanged.
     Mutations require trusted Origin or Referer, Content-Type application/json even without a body, and session-bound
     CSRF including login. Dependency failures fail closed with 503. See technical-spec.md for session lifetimes

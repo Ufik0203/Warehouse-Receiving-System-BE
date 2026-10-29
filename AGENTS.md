@@ -12,7 +12,7 @@ Jangan menjalankan perintah Git apa pun, termasuk read-only, staging, commit, br
 
 ## Aturan umum
 
-- Kerjakan hanya task yang diminta; Task 3 dan core receiving Task 4 telah diimplementasikan; Task 5/6 tidak dimulai tanpa instruksi eksplisit. Jangan menambah role admin, registrasi publik, fitur AI atau scope lain.
+- Kerjakan hanya task yang diminta; Task 3 dan core receiving Task 4 telah diimplementasikan; Task 5 user management telah diimplementasikan; Task 6 tidak dimulai tanpa instruksi eksplisit. Jangan menambah role admin, registrasi publik, fitur AI atau scope lain.
 - Gunakan TypeScript strict, validasi untrusted input, hindari explicit any/type suppression; jangan mengekspos hash/password/session internals atau secret ke response/log.
 - npm 11.6.2, Node 24 dan lockfile lokal adalah baseline; gunakan dependency/config repository ini, bukan parent/saudara. Tidak menggunakan flags workspace untuk command aktif.
 - API backend adalah sumber utama; replika frontend harus identik sesuai docs/api-sync.md. Jangan menyinkronkan lewat Git/GitHub atau memilih kode error/behavior baru tanpa dasar.

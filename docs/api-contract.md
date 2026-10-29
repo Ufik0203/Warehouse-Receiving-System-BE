@@ -1,6 +1,6 @@
 # API Contract
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Health, empat endpoint autentikasi Task 3 dan core products/receivings/inventory Task 4 telah diimplementasikan; user management Task 5 masih rencana. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Health, empat endpoint autentikasi Task 3 dan core products/receivings/inventory Task 4 telah diimplementasikan; user management Task 5 juga telah diimplementasikan. Seluruh 20 operasi kontrak tersedia; bukti runtime sesuai cakupan testing.md. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
 
 Sumber utama kontrak bersama adalah dokumen ini dalam repository backend. Frontend menyimpan replika byte-identik; prosedur dan pemeriksaan sinkronisasi ada di [api-sync.md](api-sync.md). Perubahan semantik harus ditetapkan di backend terlebih dahulu.
 

@@ -18,6 +18,8 @@ import { createReceivingsService } from '../modules/receivings/receivings.servic
 import { createReceivingsRouter } from '../modules/receivings/receivings.route.js';
 import { createInventoryService } from '../modules/inventory/inventory.service.js';
 import { createInventoryRouter } from '../modules/inventory/inventory.route.js';
+import { createUsersRouter } from '../modules/users/users.route.js';
+import { createUsersService } from '../modules/users/users.service.js';
 
 export interface SecurityDependencies { environment: Environment; prisma: PrismaClient; redis: RedisClient; limits?: RatePolicy }
 export function createApiRouter({ environment, prisma, redis, limits }: SecurityDependencies) {
@@ -46,6 +48,7 @@ export function createApiRouter({ environment, prisma, redis, limits }: Security
   protectedRoutes.use('/products', createProductsRouter(createProductsService(prisma)));
   protectedRoutes.use('/receivings', createReceivingsRouter(createReceivingsService(prisma)));
   protectedRoutes.use('/inventory', createInventoryRouter(createInventoryService(prisma)));
+  protectedRoutes.use('/users', createUsersRouter(createUsersService(prisma)));
   router.use(protectedRoutes);
   return router;
 }

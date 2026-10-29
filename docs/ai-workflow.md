@@ -12,7 +12,7 @@ Task 1 review/OpenAPI, Task 2 fondasi, Task 2A UI dan persiapan repository telah
 | --- | --- | --- |
 | Task 3 | IMPLEMENTED; pemeriksaan aktual pada testing.md | Redis sessions, CSRF bootstrap/login/logout/me, revocation, authorization, shared limiter |
 | Task 4 | IMPLEMENTED; hasil runtime pada testing.md | Products/receivings/inventory, row locks, canonical payload hashing, idempotency dan atomic ledger |
-| Task 5 | PLANNED; NOT_RUN | Supervisor user management, advisory lock/actor recheck, self/last-supervisor invariants |
+| Task 5 | IMPLEMENTED; hasil runtime pada testing.md | Supervisor user management, advisory lock/actor recheck, self/last-supervisor invariants |
 | Task 6 integration boundary | PLANNED; NOT_RUN | Sediakan kontrak/API untuk frontend; tidak mengerjakan UI di repo ini |
 | Task 7 backend | PLANNED; NOT_RUN | Backend image/migration job, reproducible deployment, secret/proxy config dan runtime evidence |
 
@@ -91,3 +91,18 @@ Urutan implementasi berikutnya, semuanya belum dijalankan:
 - [ ] Frontend contract sync, browser flow dan deployment Linux/TLS tetap NOT_RUN.
 
 Keputusan R-10/R-11/R-13 kini punya bukti runtime sesuai scope Task 4. Catatan review/NOT_RUN sebelum implementasi di atas tetap histori. Tidak melanjutkan Task 5/6 atau menjalankan Git/GitHub.
+
+
+## Execution log Task 5
+
+2026-10-29: pengguna mengizinkan user management backend. Audit awal tidak menemukan users module. Docker dan PostgreSQL/Redis existing healthy; project tes baru _test/Redis namespace terpisah dibuat tanpa menghapus volume/data. Modul users berlapis diimplementasikan; auth/core receiving tetap dipertahankan. Tidak menjalankan Git/GitHub atau melanjutkan frontend/Task 6.
+
+- [x] Supervisor-only create/list/detail/update/soft delete, DTO aman dan strict input.
+- [x] R-10 USER_NOT_FOUND; R-11 nama/password/email boundaries dan normalisasi sesuai kontrak.
+- [x] Shared advisory lock dengan seed, actor recheck setelah lock dan transaksi account invariant.
+- [x] Self restrictions, minimal supervisor, version increments actual-change dan repeated delete 204.
+- [x] Tes nyata lock wait pg_locks, concurrent cross-demotion, SQL late failure, history/revocation.
+- [x] Regresi Task 3/4; 71 tes, lint/typecheck/build, Prisma validate/generate/deploy ulang.
+- [ ] Frontend contract sync, browser/E2E dan Task 6 tetap NOT_RUN.
+
+Catatan belum-tersedia/NOT_RUN user management pada Task 4 di atas adalah histori, bukan status terbaru. Tidak mengubah bukti task sebelumnya. Perintah dan batas bukti terbaru ada pada testing.md.

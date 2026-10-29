@@ -1,6 +1,6 @@
 # Warehouse Receiving System — Backend
 
-Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Task 4 core receiving tersedia: GET/POST /api/v1/products, GET /api/v1/products/:id, GET/POST /api/v1/receivings, GET /api/v1/receivings/:id, POST /api/v1/receivings/:id/receipts, GET /api/v1/inventory dan GET /api/v1/inventory/transactions. User management Task 5 belum diimplementasikan.
+Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Task 4 core receiving tersedia: GET/POST /api/v1/products, GET /api/v1/products/:id, GET/POST /api/v1/receivings, GET /api/v1/receivings/:id, POST /api/v1/receivings/:id/receipts, GET /api/v1/inventory dan GET /api/v1/inventory/transactions. Task 5 user management tersedia: GET/POST /api/v1/users serta GET/PATCH/DELETE /api/v1/users/:id, seluruhnya supervisor-only.
 
 Seluruh file untuk instalasi dan build berada dalam repository ini. Tidak memerlukan package.json, node_modules, konfigurasi atau lockfile dari folder induk/frontend. Folder ini boleh disalin sebagai root repository tersendiri. Dokumentasi mandiri tersedia pada docs/; provenance dan arsip lokal mempertahankan dokumen proyek asal. Tidak perlu mengakses folder induk untuk membaca spesifikasi atau menjalankan command fondasi.
 
@@ -121,4 +121,15 @@ npm run typecheck
 npm run build
 ```
 
-Laporan aktual ada pada [testing Task 4](docs/testing.md#bukti-aktual-task-4). Frontend/Task 5/Task 6 belum dikerjakan; sumber kontrak backend perlu disalin manual ke frontend sesuai api-sync.md.
+Laporan aktual ada pada [testing Task 4](docs/testing.md#bukti-aktual-task-4). Frontend/Task 6 belum dikerjakan; sumber kontrak backend perlu disalin manual ke frontend sesuai api-sync.md.
+
+
+## User management Task 5
+
+Supervisor dapat membuat OPERATOR/SUPERVISOR, list/detail user (termasuk detail deleted), mengubah name/role/isActive, dan soft delete. Query list: pagination, role, isActive literal true/false, includeDeleted literal true/false (default false); urutan createdAt DESC, id DESC. Email tetap unik termasuk deleted; update email/password, reset/restore, registrasi publik dan role tambahan tidak tersedia.
+
+Semua mutation mengambil advisory lock transaksi 735910001 yang sama dengan seed dan memeriksa ulang actor sebagai supervisor aktif setelah lock diperoleh. Hash Argon2id dibuat sebelum transaksi. Self-demotion/deactivation/deletion ditolak; minimal satu supervisor aktif dipertahankan. Perubahan role/status aktual menaikkan authVersion sekali, nama/no-op tidak. Soft delete menonaktifkan akun dan menaikkan versi; delete ulang 204 tanpa perubahan tambahan. Semua field/hash/version mutation commit atomik.
+
+Gunakan session/CSRF/JSON/trusted Origin seperti mutation lain, termasuk DELETE tanpa body dengan Content-Type application/json. USER_NOT_FOUND 404, konflik domain 409, dependency failure 503; DTO whitelist sama dengan auth dan tidak berisi password/hash/authVersion. Task 6/frontend tidak dikerjakan.
+
+Bukti lengkap ada di [testing Task 5](docs/testing.md#bukti-aktual-task-5). Untuk suite terbaru, arahkan BACKEND_ENV_FILE ke environment khusus _test/namespace wrs:test:... (eksekusi ini env/.env.task5), lalu npm run test:unit dan npm run test:integration. Tidak membersihkan database/volume existing untuk re-run.

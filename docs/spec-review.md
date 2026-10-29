@@ -85,3 +85,8 @@ R-10/R-11/R-13 diselesaikan sebagai desain teknis pada [review rinci](task4-read
 ## Tindak lanjut implementasi Task 4
 
 R-10 product/receiving lookup, R-11 teks scope produk/receiving/query dan R-13 read-only snapshot telah mempunyai bukti runtime pada testing.md. Status DESIGN_RESOLVED pada tabel tetap menyatakan desain lintas endpoint; USER_NOT_FOUND dan validator user Task 5 belum dijalankan/diimplementasikan. API metadata ketersediaan diperbarui; DTO/status/security contract tidak berubah. Tidak ada schema/migration/dependency baru atau perluasan scope.
+
+
+## Tindak lanjut Task 5
+
+USER_NOT_FOUND kini terbukti untuk GET/PATCH/DELETE user, serta Unicode name/password/email boundaries sesuai scope Task 5. Desain R-10/R-11 tidak diubah; bukti runtime baru terpisah pada [testing Task 5](testing.md#bukti-aktual-task-5). Status user-management NOT_RUN pada bagian Task 4 adalah histori. Scope frontend/browser/deployment yang belum dijalankan tetap NOT_RUN.

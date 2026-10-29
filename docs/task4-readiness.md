@@ -60,3 +60,8 @@ Validator OpenAPI 0.7.2, checker dokumentasi dan checker khusus persiapan Task 4
 ## Status setelah implementasi Task 4
 
 Bagian DESIGN_RESOLVED/NOT_RUN di atas adalah bukti tahap persiapan. Implementasi Task 4 kini mempunyai bukti runtime pada [testing.md](testing.md#bukti-aktual-task-4): R-10 product/receiving lookup, R-11 nama produk/reference/q/SKU dan R-13 snapshot dua koneksi. Cakupan user endpoint USER_NOT_FOUND serta user-name validation tetap Task 5/NOT_RUN. Desain tidak diubah. Tidak mengklaim frontend/E2E atau seluruh temuan lintas modul telah teruji.
+
+
+## Tindak lanjut Task 5
+
+USER_NOT_FOUND kini terbukti untuk GET/PATCH/DELETE user, serta Unicode name/password/email boundaries sesuai scope Task 5. Desain R-10/R-11 tidak diubah; bukti runtime baru terpisah pada [testing Task 5](testing.md#bukti-aktual-task-5). Status user-management NOT_RUN pada bagian Task 4 adalah histori. Scope frontend/browser/deployment yang belum dijalankan tetap NOT_RUN.

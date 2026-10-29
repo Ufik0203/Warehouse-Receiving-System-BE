@@ -43,7 +43,7 @@ describe('real PostgreSQL/Redis foundation', () => {
   it('preserves seed rows and existing password hashes on rerun with changed credentials', async () => {
     const accounts = parseSeedAccounts(process.env);
     const before = await prisma.user.findMany({ orderBy: { email: 'asc' } });
-    expect(before).toHaveLength(2);
+    expect(before.filter(user => accounts.some(account => account.email === user.email))).toHaveLength(2);
     await seedAccounts(prisma, accounts.map(value => ({ ...value, name: 'Do not replace', password: randomUUID() })));
     const after = await prisma.user.findMany({ orderBy: { email: 'asc' } });
     // Compare full rows without placing hashes in assertion output on failure.
