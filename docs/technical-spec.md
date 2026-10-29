@@ -1,6 +1,6 @@
 # Technical Specification
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2 dan autentikasi/security Task 3 telah diimplementasikan; fitur bisnis belum tersedia. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2, autentikasi/security Task 3 dan core receiving Task 4 telah diimplementasikan; user management belum tersedia. Lihat [testing.md](testing.md) untuk status dan konteks asal bukti.
 
 ## Baseline teknologi
 
@@ -431,7 +431,7 @@ npm run db:seed
 npm run dev
 ```
 
-Command runtime adalah petunjuk untuk env yang diisi pemilik proyek, bukan tindakan yang dijalankan pada pekerjaan dokumentasi. Seed memakai account-management lock 735910001 (src/common/security/account-lock.ts), tidak menimpa field/hash akun existing. Validasi nama seed mengikuti kapasitas varchar(120); keputusan unit panjang API R-11 belum dipilih.
+Command runtime adalah petunjuk untuk env yang diisi pemilik proyek, bukan tindakan yang dijalankan pada pekerjaan dokumentasi. Seed memakai account-management lock 735910001 (src/common/security/account-lock.ts), tidak menimpa field/hash akun existing. Validasi nama seed mengikuti kapasitas varchar(120); unit panjang API R-11 kini Unicode code point, lihat keputusan persiapan Task 4.
 
 Readiness menguji akses tabel/kolom identitas tujuh model dan Redis PING sebelum listener berjalan. Saat berjalan, live independen dan ready gagal mengirim 503 aman. Shutdown menunggu HTTP lalu disconnect Prisma/close Redis dengan deadline 10 detik. Lihat [verification.md](verification.md) dan [testing.md](testing.md) untuk batas bukti.
 
@@ -444,8 +444,8 @@ Frontend adalah aplikasi terpisah melalui HTTP; tidak mengimpor Prisma Client da
 - Deployment memakai migrate deploy, development memakai migrate dev. Jangan db push sebagai deployment atau mengubah applied migration.
 - Seluruh CHECK dan composite FK sudah ada pada initial migration; pertahankan bytes semua migrasi. Cardinality child/balance serta invariant status/ledger ditegakkan service yang direncanakan, bukan mengarang trigger baru.
 - Compose lokal hanya postgres/redis; API Dockerfile, migration job deployment dan public deployment belum selesai. Jangan menghapus database atau volume existing untuk membuat tes lulus.
-- Health/fondasi dan empat endpoint auth tersedia sejak Task 3; seluruh business endpoints belum ada.
-- R-10 kode error bisnis/not-found, R-11 unit panjang API non-password, R-13 pilihan query snapshot masih terbuka sebelum implementasi terkait; lihat [spec-review.md](spec-review.md). Jangan mengarang keputusan stakeholder.
+- Health/auth dan products/receivings/inventory tersedia; user management Task 5 belum diimplementasikan.
+- Desain R-10/R-11/R-13 diputuskan pada [persiapan Task 4](task4-readiness.md); implementasi dan pengujian bisnis tetap NOT_RUN.
 - Semua pekerjaan Git/GitHub hanya manual pengguna; agent tidak menjalankan perintah Git atau tool GitHub.
 
 
@@ -457,3 +457,27 @@ Frontend adalah aplikasi terpisah melalui HTTP; tidak mengimpor Prisma Client da
 - TRUST_PROXY default false, konfigurasi env berupa daftar IP/CIDR atau loopback, bukan boolean true/hop count. HTTPS menolak request yang tidak teridentifikasi secure oleh proxy terpercaya.
 - Semua auth response termasuk error no-store. Error body tidak menyertakan detail dependency, input, hash, SID atau token; requestId dibuat server. Password Argon2id dan dummy verification untuk akun tidak ditemukan.
 - Authorization role disediakan sebagai middleware dan diuji melalui route khusus test, tidak menerbitkan endpoint bisnis. Reload role/status/authVersion berlaku pada setiap protected request; perubahan account melalui API tetap scope Task 5.
+
+
+## Desain persiapan Task 4
+
+R-10 mengikuti tabel api-contract.md. Service create receiving memeriksa semua productId melalui transaction client sebelum insert parent/children. Tidak mengandalkan FK error sebagai validasi normal atau memetakan seluruh Prisma error menjadi 404. Tidak menambah lifecycle Product. User endpoints tetap Task 5.
+
+R-11 memakai iterasi code point, bukan string.length JavaScript, sesudah normalisasi field existing. Angka batas dan schema/migrasi varchar tetap; tidak menambah NFC/NFKC atau grapheme segmentation. Parameter OpenAPI mendeskripsikan nilai ternormalisasi; raw whitespace/case diproses sebelum domain validation.
+
+R-13: service read detail membuka Prisma interactive transaction dengan isolationLevel RepeatableRead. Repository menerima Prisma.TransactionClient; semua query header/item/product projection memakai client itu, bukan global Prisma. Mapper hanya mengubah hasil ke DTO. Transaksi ini hanya SELECT, tanpa FOR UPDATE, write atau network/Redis call. SET TRANSACTION READ ONLY dapat dipasang sebagai statement pertama untuk enforcement. Transaksi dibuat singkat. Pilihan ini tetap benar bila relation reads Prisma menghasilkan beberapa SQL statement; tidak mengasumsikan include selalu satu SELECT. Receipt mutation tetap READ COMMITTED dan urutan locking existing.
+
+Dasar: [PostgreSQL 17 isolation](https://www.postgresql.org/docs/17/transaction-iso.html), [character types](https://www.postgresql.org/docs/17/datatype-character.html), [OpenAPI 3.0.3](https://spec.openapis.org/oas/v3.0.3). Tipe Prisma 7.10.1 lokal memuat opsi isolationLevel pada $transaction dan enum RepeatableRead. Dokumentasi Prisma live mengarah ke ORM 8; API ORM 8 tidak dijadikan acuan ORM 7 dan dependency tidak di-upgrade. Ini verifikasi desain/tanda tangan tipe, bukan bukti runtime Task 4.
+
+
+## Implementasi Task 4
+
+Modul products/receivings/inventory mempunyai schema, repository, mapper, service, controller dan route. Common validation menyimpan UUID lowercase, code-point text refinement, strict query dan pagination. Service menentukan transaksi; semua akses database fitur berada di repository melalui client yang diberikan. Controller hanya adaptasi HTTP dan input; mapper whitelist DTO tanpa hash/session internals.
+
+List data/count memakai snapshot REPEATABLE READ agar pagination total konsisten dengan page. Detail receiving memakai SET TRANSACTION READ ONLY dalam REPEATABLE READ; header/items/product projection seluruhnya melalui transaction client. Create receiving menguji semua productId sebelum write dan memetakan hasil dengan client yang sama sebelum commit.
+
+Receipt canonical hash memakai JSON object berurutan receivingId, actorId, items (receivingItemId lowercase dan quantity), items diurutkan menurut receivingItemId. Key dinormalisasi lowercase dan scoped per receiving oleh unique SQL existing. Parent lock diperoleh sebelum lookup receipt, lalu completed check dan item locks. Seluruh quantity dicek sebelum write; balance increments diurutkan productId. ReceiptDto diambil dari immutable receipt+ledger dengan urutan item tetap. Snapshot current receiving tidak dimasukkan ke replay.
+
+DatabaseOperation mempertahankan AppError domain, memetakan Prisma dependency errors ke 503 serta write conflict/deadlock/lock timeout yang telah rollback ke TRANSACTION_RETRY_REQUIRED. Unexpected programming error diteruskan ke safe 500 handler; raw error/SQL/credential tidak masuk respons.
+
+Tidak ada dependency/schema/migrasi tambahan. PostgreSQL adapter Prisma 7.10.1 dengan pg 8.23.1 mengeluarkan warning query-in-flight pada internal runtime; tes aktual lulus, namun upgrade driver ke pg 9 perlu verifikasi ulang. Source aplikasi tidak memakai Promise.all untuk query dalam satu transaction client. Jangan menonaktifkan warning atau mengganti versi tanpa bukti.

@@ -1,6 +1,6 @@
 # Product Requirements ? Warehouse Receiving System
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2 telah diimplementasikan; autentikasi dan fitur bisnis belum tersedia. Status per pemeriksaan dan konteks asalnya ada di [testing.md](testing.md).
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Fondasi Task 2, autentikasi Task 3 dan core receiving Task 4 telah diimplementasikan; user management belum tersedia. Status per pemeriksaan dan konteks asalnya ada di [testing.md](testing.md).
 
 Dokumen ini menetapkan perilaku aplikasi. Detail teknis seperti Prisma transaction dan Redis key berada di technical specification.
 

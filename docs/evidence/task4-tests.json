@@ -1,0 +1,725 @@
+{
+  "numTotalTestSuites": 15,
+  "numPassedTestSuites": 15,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 58,
+  "numPassedTests": 58,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793249097604,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security bootstraps a stable token with Redis TTL and secure local cookie attributes",
+          "status": "passed",
+          "title": "bootstraps a stable token with Redis TTL and secure local cookie attributes",
+          "duration": 118.94060000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security rejects missing/wrong CSRF and untrusted/missing Origin before login",
+          "status": "passed",
+          "title": "rejects missing/wrong CSRF and untrusted/missing Origin before login",
+          "duration": 104.07670000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security regenerates SID/token, returns a safe DTO and revokes the pre-login session",
+          "status": "passed",
+          "title": "regenerates SID/token, returns a safe DTO and revokes the pre-login session",
+          "duration": 71.02019999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security destroys Redis session and expires the cookie on confirmed logout",
+          "status": "passed",
+          "title": "destroys Redis session and expires the cookie on confirmed logout",
+          "duration": 62.64850000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security rejects invalid/unknown input and never trims passwords; normalizes email",
+          "status": "passed",
+          "title": "rejects invalid/unknown input and never trims passwords; normalizes email",
+          "duration": 123.29289999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security rejects malformed JSON, oversized JSON, unknown queries and wrong content type",
+          "status": "passed",
+          "title": "rejects malformed JSON, oversized JSON, unknown queries and wrong content type",
+          "duration": 34.27039999999988,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security uses generic credential errors for wrong password, unknown, inactive and deleted users",
+          "status": "passed",
+          "title": "uses generic credential errors for wrong password, unknown, inactive and deleted users",
+          "duration": 153.93719999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security revokes old sessions after status, deletion or authVersion changes",
+          "status": "passed",
+          "title": "revokes old sessions after status, deletion or authVersion changes",
+          "duration": 166.74569999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security loads role from PostgreSQL and authorizes supervisor only on a test-only protected probe",
+          "status": "passed",
+          "title": "loads role from PostgreSQL and authorizes supervisor only on a test-only protected probe",
+          "duration": 145.41629999999986,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security enforces actual Redis idle expiry and anonymous lifetime",
+          "status": "passed",
+          "title": "enforces actual Redis idle expiry and anonymous lifetime",
+          "duration": 2388.9747,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security caps rolling Redis/cookie lifetime at absolute deadline despite active use",
+          "status": "passed",
+          "title": "caps rolling Redis/cookie lifetime at absolute deadline despite active use",
+          "duration": 3290.0158999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real session, CSRF and authorization security"],
+          "fullName": "real session, CSRF and authorization security sets HTTPS host cookie only with explicitly trusted HTTPS proxy",
+          "status": "passed",
+          "title": "sets HTTPS host cookie only with explicitly trusted HTTPS proxy",
+          "duration": 17.1261999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures groups IPv6 subnets and IPv4-mapped IPv6 consistently for shared IP limits",
+          "status": "passed",
+          "title": "groups IPv6 subnets and IPv4-mapped IPv6 consistently for shared IP limits",
+          "duration": 26.472500000000764,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures does not acknowledge failed session persistence or failed logout destruction",
+          "status": "passed",
+          "title": "does not acknowledge failed session persistence or failed logout destruction",
+          "duration": 84.51020000000062,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures shares the global IP limiter between two API instances and returns Retry-After",
+          "status": "passed",
+          "title": "shares the global IP limiter between two API instances and returns Retry-After",
+          "duration": 21.733000000000175,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures enforces distinct login-IP, normalized-email-pair and authenticated-user limits",
+          "status": "passed",
+          "title": "enforces distinct login-IP, normalized-email-pair and authenticated-user limits",
+          "duration": 147.78120000000035,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures fails closed on a real disconnected Redis client for auth and limits",
+          "status": "passed",
+          "title": "fails closed on a real disconnected Redis client for auth and limits",
+          "duration": 19.477600000000166,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures maps limiter store errors to 503 even when Redis PING still succeeds",
+          "status": "passed",
+          "title": "maps limiter store errors to 503 even when Redis PING still succeeds",
+          "duration": 11.530099999999948,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "Redis rate limit sharing and controlled dependency failures"
+          ],
+          "fullName": "Redis rate limit sharing and controlled dependency failures maps PostgreSQL failure to 503 without treating it as invalid credentials",
+          "status": "passed",
+          "title": "maps PostgreSQL failure to 503 without treating it as invalid credentials",
+          "duration": 61.69869999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249098663,
+      "endTime": 1793249105713.6987,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/integration/auth.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation starts a real HTTP listener and shuts down HTTP, Prisma and Redis cleanly",
+          "status": "passed",
+          "title": "starts a real HTTP listener and shuts down HTTP, Prisma and Redis cleanly",
+          "duration": 75.12220000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation returns ready against migrated PostgreSQL and real Redis",
+          "status": "passed",
+          "title": "returns ready against migrated PostgreSQL and real Redis",
+          "duration": 38.21730000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation preserves seed rows and existing password hashes on rerun with changed credentials",
+          "status": "passed",
+          "title": "preserves seed rows and existing password hashes on rerun with changed credentials",
+          "duration": 137.39499999999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation has all SQL CHECK constraints and composite foreign keys with RESTRICT",
+          "status": "passed",
+          "title": "has all SQL CHECK constraints and composite foreign keys with RESTRICT",
+          "duration": 4.4956999999999425,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation rejects invalid quantities and cross-document ledger links without persisting fixtures",
+          "status": "passed",
+          "title": "rejects invalid quantities and cross-document ledger links without persisting fixtures",
+          "duration": 26.284900000000107,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation fails readiness with actual PostgreSQL connection failure",
+          "status": "passed",
+          "title": "fails readiness with actual PostgreSQL connection failure",
+          "duration": 11.016600000000153,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["real PostgreSQL/Redis foundation"],
+          "fullName": "real PostgreSQL/Redis foundation fails readiness after the actual Redis client is closed",
+          "status": "passed",
+          "title": "fails readiness after the actual Redis client is closed",
+          "duration": 8.409599999999955,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249112403,
+      "endTime": 1793249112704.4097,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/integration/foundation.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis enforces roles, CSRF and strict input; product and zero balance are created atomically",
+          "status": "passed",
+          "title": "enforces roles, CSRF and strict input; product and zero balance are created atomically",
+          "duration": 309.7172999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis maps R-10 missing products/receivings and validates before lookup without writes",
+          "status": "passed",
+          "title": "maps R-10 missing products/receivings and validates before lookup without writes",
+          "duration": 316.69219999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis round trips R-11 astral boundaries after normalization; rejects excess name/reference/query/SKU",
+          "status": "passed",
+          "title": "round trips R-11 astral boundaries after normalization; rejects excess name/reference/query/SKU",
+          "duration": 208.13519999999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis creates OPEN receiving without stock movement, then partial and full receipt with safe DTOs",
+          "status": "passed",
+          "title": "creates OPEN receiving without stock movement, then partial and full receipt with safe DTOs",
+          "duration": 394.9000000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis rejects foreign items, malformed quantities, duplicates and client totals without changing state",
+          "status": "passed",
+          "title": "rejects foreign items, malformed quantities, duplicates and client totals without changing state",
+          "duration": 311.42779999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis rejects one excessive item atomically and accepts a valid multi-item receipt",
+          "status": "passed",
+          "title": "rejects one excessive item atomically and accepts a valid multi-item receipt",
+          "duration": 249.6632999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis replays final receipt after completion/reordered uppercase payload, and conflicts on actor or quantity changes",
+          "status": "passed",
+          "title": "replays final receipt after completion/reordered uppercase payload, and conflicts on actor or quantity changes",
+          "duration": 270.2389000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis supports pagination/filter rules, zero balances and missing-history filters",
+          "status": "passed",
+          "title": "supports pagination/filter rules, zero balances and missing-history filters",
+          "duration": 209.1310000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis treats SQL LIKE special characters as literal search substrings",
+          "status": "passed",
+          "title": "treats SQL LIKE special characters as literal search substrings",
+          "duration": 109.23990000000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis allows subset receipts and replays an earlier immutable receipt after later operations",
+          "status": "passed",
+          "title": "allows subset receipts and replays an earlier immutable receipt after later operations",
+          "duration": 234.9096999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis enforces receiving item count/ranges and CSRF without trusting client state",
+          "status": "passed",
+          "title": "enforces receiving item count/ranges and CSRF without trusting client state",
+          "duration": 193.38689999999997,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis fails closed on Redis loss for all business read routes",
+          "status": "passed",
+          "title": "fails closed on Redis loss for all business read routes",
+          "duration": 65.23710000000028,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "core receiving HTTP contract on real PostgreSQL/Redis"
+          ],
+          "fullName": "core receiving HTTP contract on real PostgreSQL/Redis preserves per-user limiting and authVersion revocation for new endpoints",
+          "status": "passed",
+          "title": "preserves per-user limiting and authVersion revocation for new endpoints",
+          "duration": 138.16820000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation serializes concurrent same-key HTTP requests into one receipt and one stock increment",
+          "status": "passed",
+          "title": "serializes concurrent same-key HTTP requests into one receipt and one stock increment",
+          "duration": 221.95589999999993,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation rejects one concurrent distinct-key 7+7 operation when expected is 10",
+          "status": "passed",
+          "title": "rejects one concurrent distinct-key 7+7 operation when expected is 10",
+          "duration": 201.13480000000027,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation accepts concurrent distinct-key 4+6 operations and completes exactly once",
+          "status": "passed",
+          "title": "accepts concurrent distinct-key 4+6 operations and completes exactly once",
+          "duration": 180.66170000000056,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation maintains shared-product balances across documents with opposite payload order",
+          "status": "passed",
+          "title": "maintains shared-product balances across documents with opposite payload order",
+          "duration": 179.6242999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation rolls back an actual PostgreSQL failure after receipt, counters and ledger writes",
+          "status": "passed",
+          "title": "rolls back an actual PostgreSQL failure after receipt, counters and ledger writes",
+          "duration": 140.2505000000001,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation uses one REPEATABLE READ snapshot when a receipt commits between header and item SELECTs",
+          "status": "passed",
+          "title": "uses one REPEATABLE READ snapshot when a receipt commits between header and item SELECTs",
+          "duration": 167.29640000000018,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "real transaction concurrency and snapshot isolation"
+          ],
+          "fullName": "real transaction concurrency and snapshot isolation returns controlled dependency errors from each business service when PostgreSQL is unavailable",
+          "status": "passed",
+          "title": "returns controlled dependency errors from each business service when PostgreSQL is unavailable",
+          "duration": 18.412499999999454,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249107421,
+      "endTime": 1793249111541.4126,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/integration/receiving.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["environment safety"],
+          "fullName": "environment safety rejects missing settings with field names and without secret values",
+          "status": "passed",
+          "title": "rejects missing settings with field names and without secret values",
+          "duration": 6.368200000000002,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["environment safety"],
+          "fullName": "environment safety rejects insecure HTTPS and inconsistent lifetime settings",
+          "status": "passed",
+          "title": "rejects insecure HTTPS and inconsistent lifetime settings",
+          "duration": 0.8310000000000173,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["environment safety"],
+          "fullName": "environment safety accepts a valid local configuration and explicit boolean false",
+          "status": "passed",
+          "title": "accepts a valid local configuration and explicit boolean false",
+          "duration": 0.3790000000000191,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["environment safety"],
+          "fullName": "environment safety accepts explicit proxy networks and rejects broad or malformed proxy configuration",
+          "status": "passed",
+          "title": "accepts explicit proxy networks and rejects broad or malformed proxy configuration",
+          "duration": 6.282299999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["seed input"],
+          "fullName": "seed input normalizes names/emails and preserves password whitespace and code points",
+          "status": "passed",
+          "title": "normalizes names/emails and preserves password whitespace and code points",
+          "duration": 2.310099999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["seed input"],
+          "fullName": "seed input rejects short passwords and duplicate normalized emails",
+          "status": "passed",
+          "title": "rejects short passwords and duplicate normalized emails",
+          "duration": 0.961400000000026,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249113508,
+      "endTime": 1793249113524.9614,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/unit/environment.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["health HTTP contract"],
+          "fullName": "health HTTP contract returns the exact liveness/readiness bodies",
+          "status": "passed",
+          "title": "returns the exact liveness/readiness bodies",
+          "duration": 45.620199999999954,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["health HTTP contract"],
+          "fullName": "health HTTP contract returns a safe 503 while liveness remains available",
+          "status": "passed",
+          "title": "returns a safe 503 while liveness remains available",
+          "duration": 8.456600000000037,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": ["health HTTP contract"],
+          "fullName": "health HTTP contract does not expose authentication or business routes",
+          "status": "passed",
+          "title": "does not expose authentication or business routes",
+          "duration": 6.872799999999984,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249113188,
+      "endTime": 1793249113248.8728,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/unit/health.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "receipt canonicalization and safe transaction retry errors"
+          ],
+          "fullName": "receipt canonicalization and safe transaction retry errors normalizes identity and item permutation while preserving actor and quantity distinctions",
+          "status": "passed",
+          "title": "normalizes identity and item permutation while preserving actor and quantity distinctions",
+          "duration": 10.940500000000043,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "receipt canonicalization and safe transaction retry errors"
+          ],
+          "fullName": "receipt canonicalization and safe transaction retry errors maps aborted deadlock, serialization and lock timeout to controlled retry without raw database detail",
+          "status": "passed",
+          "title": "maps aborted deadlock, serialization and lock timeout to controlled retry without raw database detail",
+          "duration": 1.5020999999999844,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "receipt canonicalization and safe transaction retry errors"
+          ],
+          "fullName": "receipt canonicalization and safe transaction retry errors preserves unexpected programming errors for the generic 500 handler",
+          "status": "passed",
+          "title": "preserves unexpected programming errors for the generic 500 handler",
+          "duration": 0.23799999999999955,
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1793249113869,
+      "endTime": 1793249113882.238,
+      "status": "passed",
+      "message": "",
+      "name": "D:/My Project/Warehouse Receiving System/backend/tests/unit/receiving-security.test.ts"
+    }
+  ]
+}

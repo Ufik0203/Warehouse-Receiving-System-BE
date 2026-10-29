@@ -11,6 +11,13 @@ import { createAuthRepository } from '../modules/auth/auth.repository.js';
 import { createAuthService } from '../modules/auth/auth.service.js';
 import { createAuthRouter } from '../modules/auth/auth.route.js';
 import { AppError, unavailable } from '../common/errors/app-error.js';
+import { authenticate } from '../common/middlewares/authentication.js';
+import { createProductsService } from '../modules/products/products.service.js';
+import { createProductsRouter } from '../modules/products/products.route.js';
+import { createReceivingsService } from '../modules/receivings/receivings.service.js';
+import { createReceivingsRouter } from '../modules/receivings/receivings.route.js';
+import { createInventoryService } from '../modules/inventory/inventory.service.js';
+import { createInventoryRouter } from '../modules/inventory/inventory.route.js';
 
 export interface SecurityDependencies { environment: Environment; prisma: PrismaClient; redis: RedisClient; limits?: RatePolicy }
 export function createApiRouter({ environment, prisma, redis, limits }: SecurityDependencies) {
@@ -33,5 +40,12 @@ export function createApiRouter({ environment, prisma, redis, limits }: Security
   router.use(csrf.protect);
   router.use(express.json({ limit: '64kb', strict: true }));
   router.use('/auth', createAuthRouter(createAuthService(createAuthRepository(prisma)), environment, csrf, limiters));
+  // Apply the current-user reload and shared per-user limiter only to business modules.
+  const protectedRoutes = Router();
+  protectedRoutes.use(authenticate(createAuthService(createAuthRepository(prisma)), environment), limiters.user);
+  protectedRoutes.use('/products', createProductsRouter(createProductsService(prisma)));
+  protectedRoutes.use('/receivings', createReceivingsRouter(createReceivingsService(prisma)));
+  protectedRoutes.use('/inventory', createInventoryRouter(createInventoryService(prisma)));
+  router.use(protectedRoutes);
   return router;
 }

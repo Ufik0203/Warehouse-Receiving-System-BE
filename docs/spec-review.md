@@ -34,10 +34,10 @@ Tanggal: 2026-10-29 (Asia/Jakarta). Input: AGENTS.md, README.md, seluruh dokumen
 | R-07 | SKU raw lowercase/space vs regex uppercase | BR-P01 menormalisasi lebih dahulu; regex berlaku hasil trim+uppercase. OpenAPI mendeskripsikan normalized pattern, tidak memakai raw uppercase pattern yang salah menolak input valid. | Selesai; tambah tes normalisasi. |
 | R-08 | maxLength password JS UTF-16 vs Unicode code point | BR-U06 eksplisit code point; implementasi wajib refinement code point, bukan sekadar `.length` JS. Login minimum 1 berbeda dari create minimum 12 sesuai API; bukan kontradiksi. | Selesai; unit tests karakter astral dan batas wajib. |
 | R-09 | Keunikan productId/receivingItemId tidak dapat diwakili uniqueItems saja | Dua object dengan ID sama dan quantity berbeda tetap harus ditolak. Backend memeriksa ID setelah normalisasi; OpenAPI description mencatat aturan property uniqueness. | Selesai; schema validator tidak membuktikan aturan ini. |
-| R-10 | Kode not-found user/produk dan produk tidak tersedia saat create receiving tidak dirinci | Kontrak hanya menyebut resource-specific 404; receiving/item punya nama kode eksplisit. Tidak mengarang USER_NOT_FOUND/PRODUCT_NOT_FOUND atau precedence error. | Terbuka: sebelum endpoint terkait, lengkapi code dan status/precedence produk tak tersedia secara konsisten. Tidak menghalangi scaffold/schema. |
-| R-11 | Unit panjang nama/reference dan teks non-password tidak eksplisit | Batas numerik dipertahankan; SQL varchar(n) tetap sesuai desain. OpenAPI mengungkap character limits dan normalisasi; keputusan runtime unit teks Unicode perlu diselaraskan sebelum validator input. | Terbuka, bukan alasan mengubah batas/fitur. Tidak memblokir Task 2. |
+| R-10 | Kode not-found user/produk dan produk tidak tersedia saat create receiving tidak dirinci | Kontrak hanya menyebut resource-specific 404; receiving/item punya nama kode eksplisit. Tidak mengarang USER_NOT_FOUND/PRODUCT_NOT_FOUND atau precedence error. | DESIGN_RESOLVED pada persiapan Task 4: resource-specific 404, lihat task4-readiness.md; implementasi/tes NOT_RUN. |
+| R-11 | Unit panjang nama/reference dan teks non-password tidak eksplisit | Batas numerik dipertahankan; SQL varchar(n) tetap sesuai desain. OpenAPI mengungkap character limits dan normalisasi; keputusan runtime unit teks Unicode perlu diselaraskan sebelum validator input. | DESIGN_RESOLVED: Unicode code point setelah normalisasi existing; implementasi/tes Task 4 NOT_RUN. |
 | R-12 | Source diagram CSS serta rujukan eksternal tanpa URL | Mermaid dipulihkan dari aturan tertulis, bukan menafsirkan CSS sebagai source. Dependency/API resmi diperiksa pada Task 1 dan ditautkan. PDF assessment tidak tersedia, sehingga kepatuhan terhadap isi PDF belum dapat diverifikasi mandiri. | Semantik diagram direview; render dan review PDF NOT_RUN. |
-| R-13 | Detail receiving harus snapshot konsisten walau READ COMMITTED dipakai mutasi | Mutasi row-lock dan query detail adalah tanggung jawab berbeda. Jangan membaca header dan item melalui dua snapshot lepas. Pilih satu SQL snapshot atau transaksi read dengan snapshot konsisten saat implementasi. | Keputusan implementasi query belum diambil; tidak mengubah kontrak/bukan blocker scaffold. |
+| R-13 | Detail receiving harus snapshot konsisten walau READ COMMITTED dipakai mutasi | Mutasi row-lock dan query detail adalah tanggung jawab berbeda. Jangan membaca header dan item melalui dua snapshot lepas. Pilih satu SQL snapshot atau transaksi read dengan snapshot konsisten saat implementasi. | DESIGN_RESOLVED: transaksi baca REPEATABLE READ, transaction client yang sama; tes interleaving NOT_RUN. |
 | R-14 | Contoh versi dependency bukan install proof | Irisan engine/peer resmi mendukung rencana, tetapi csrf-sync types Express 5, native Argon2 dan transitive dependencies belum diuji. | Gate pada Task 2/3; tidak menyatakan runtime kompatibel sebelum checks. |
 
 ## Pertanyaan stakeholder sumber
@@ -64,7 +64,7 @@ R-14 kini memiliki bukti aktual untuk dependency fondasi, adapter PostgreSQL, Re
 
 ## Status pada repository mandiri
 
-Dokumen ini mempertahankan review sumber. R-10/R-11/R-13 masih perlu keputusan sebelum endpoint/validator bisnis terkait. Semua file aktif dirujuk relatif terhadap repository ini; catatan path/workflow proyek gabungan adalah konteks historis. Task 3 sudah diimplementasikan sesuai tindak lanjut di bawah; semua operasi Git/GitHub hanya manual pengguna. Lihat [workflow aktif](ai-workflow.md).
+Dokumen ini mempertahankan review sumber. R-10/R-11/R-13 kini DESIGN_RESOLVED pada persiapan Task 4; runtime tetap NOT_RUN. Semua file aktif dirujuk relatif terhadap repository ini; catatan path/workflow proyek gabungan adalah konteks historis. Task 3 sudah diimplementasikan sesuai tindak lanjut di bawah; semua operasi Git/GitHub hanya manual pengguna. Lihat [workflow aktif](ai-workflow.md).
 
 ## Keputusan teknis Task 3 — 2026-10-29
 
@@ -75,3 +75,13 @@ Dokumen ini mempertahankan review sumber. R-10/R-11/R-13 masih perlu keputusan s
 - express-rate-limit 8.7.1 menggantikan rencana 8.1.0: audit mengidentifikasi bypass IPv4-mapped IPv6 dan dependency ip-address rentan pada versi lama. Patch dalam major 8 mempertahankan API; audit setelah perubahan melaporkan 0 vulnerability.
 - Kontrak hanya berubah pada metadata ketersediaan health/auth; bentuk endpoint, DTO, status dan security requirement tidak berubah. Frontend tidak diubah/dibandingkan pada task ini; pasangan kontrak dan manifest baru perlu disalin manual sesuai api-sync.md.
 - R-14 kompatibilitas runtime Express 5/session/CSRF/limiter telah diuji pada Windows dengan PostgreSQL/Redis nyata; production Linux/nginx dan TLS browser tetap NOT_RUN.
+
+
+## Status terbaru persiapan Task 4
+
+R-10/R-11/R-13 diselesaikan sebagai desain teknis pada [review rinci](task4-readiness.md). Status terbuka pada catatan Task 1/2/3 di atas adalah historis. Tidak ada persetujuan bisnis stakeholder yang diasumsikan. Implementasi/tes endpoint bisnis tetap NOT_RUN.
+
+
+## Tindak lanjut implementasi Task 4
+
+R-10 product/receiving lookup, R-11 teks scope produk/receiving/query dan R-13 read-only snapshot telah mempunyai bukti runtime pada testing.md. Status DESIGN_RESOLVED pada tabel tetap menyatakan desain lintas endpoint; USER_NOT_FOUND dan validator user Task 5 belum dijalankan/diimplementasikan. API metadata ketersediaan diperbarui; DTO/status/security contract tidak berubah. Tidak ada schema/migration/dependency baru atau perluasan scope.

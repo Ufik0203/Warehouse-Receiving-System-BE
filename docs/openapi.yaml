@@ -2,9 +2,9 @@ openapi: 3.0.3
 info:
   title: Warehouse Receiving System API
   version: 0.1.0
-  description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Foundation health and four authentication endpoints are implemented;
-    business endpoints remain planned. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
-    text length units remain open; OpenAPI maxLength describes normalized character limits, backend decision pending.
+  description: Documentation contract derived from docs/api-contract.md and explicit PRD/technical rules. Foundation health, four authentication endpoints and core products/receivings/inventory endpoints are implemented;
+    user management endpoints remain planned. Business paths /api/v1; health paths outside it. Request objects reject unknown fields. Non-password
+    text lengths use Unicode code points after documented field normalization; numeric limits are unchanged.
     Mutations require trusted Origin or Referer, Content-Type application/json even without a body, and session-bound
     CSRF including login. Dependency failures fail closed with 503. See technical-spec.md for session lifetimes
     and rate limits.
@@ -419,8 +419,7 @@ paths:
       tags:
       - users
       summary: getUser
-      description: Deleted users remain readable for historical tracing. Supervisor only. Unknown query parameters
-        are rejected with 400.
+      description: "Deleted users remain readable for historical tracing. Supervisor only. Unknown query parameters are rejected with 400. Missing user: 404 USER_NOT_FOUND; deleted user remains readable."
       security:
       - LocalSession: []
       - SecureSession: []
@@ -470,10 +469,7 @@ paths:
       tags:
       - users
       summary: updateUser
-      description: Only name, role, isActive; at least one field. Real role/status change increments authVersion.
-        No self-demotion/deactivation or reactivation of deleted user. Shared advisory lock and actor recheck protect
-        last active supervisor. Content-Type application/json is required, including no-body mutations; no body
-        is required for logout or DELETE. Supervisor only. Unknown query parameters are rejected with 400.
+      description: "Only name, role, isActive; at least one field. Real role/status change increments authVersion. No self-demotion/deactivation or reactivation of deleted user. Shared advisory lock and actor recheck protect last active supervisor. Content-Type application/json is required, including no-body mutations; no body is required for logout or DELETE. Supervisor only. Unknown query parameters are rejected with 400. Missing user: 404 USER_NOT_FOUND; deleted user: 409 USER_DELETED."
       security:
       - LocalSession: []
       - SecureSession: []
@@ -551,10 +547,7 @@ paths:
       tags:
       - users
       summary: deleteUser
-      description: Soft delete, deactivate and increment authVersion; preserve history. Repeated deletion returns
-        204 with no additional change. No self-delete; retain one active supervisor; shared advisory lock and actor
-        recheck. Content-Type application/json is required, including no-body mutations; no body is required for
-        logout or DELETE. Supervisor only. Unknown query parameters are rejected with 400.
+      description: "Soft delete, deactivate and increment authVersion; preserve history. Repeated deletion returns 204 with no additional change. No self-delete; retain one active supervisor; shared advisory lock and actor recheck. Content-Type application/json is required, including no-body mutations; no body is required for logout or DELETE. Supervisor only. Unknown query parameters are rejected with 400. Missing user: 404 USER_NOT_FOUND; repeated deletion of an existing deleted user: 204."
       security:
       - LocalSession: []
       - SecureSession: []
@@ -656,7 +649,7 @@ paths:
         schema:
           type: string
           maxLength: 100
-          description: Trim; case-insensitive substring of SKU or name.
+          description: Trim; count Unicode code points; case-insensitive substring of SKU or name.
       x-roles:
       - OPERATOR
       - SUPERVISOR
@@ -741,7 +734,7 @@ paths:
       tags:
       - products
       summary: getProduct
-      description: OPERATOR and SUPERVISOR. Unknown query parameters are rejected with 400.
+      description: "OPERATOR and SUPERVISOR. Unknown query parameters are rejected with 400. Missing product: 404 PRODUCT_NOT_FOUND."
       security:
       - LocalSession: []
       - SecureSession: []
@@ -853,13 +846,13 @@ paths:
       tags:
       - receivings
       summary: createReceiving
-      description: Expected quantities immutable; initial OPEN, received zero; no inventory change. Content-Type
-        application/json is required, including no-body mutations; no body is required for logout or DELETE. OPERATOR
-        and SUPERVISOR. Unknown query parameters are rejected with 400.
+      description: "Expected quantities immutable; initial OPEN, received zero; no inventory change. Content-Type application/json is required, including no-body mutations; no body is required for logout or DELETE. OPERATOR and SUPERVISOR. Unknown query parameters are rejected with 400. After security and syntax validation, missing referenced product: 404 PRODUCT_NOT_FOUND, no writes. Availability means row existence only. Malformed input returns 400 before lookup."
       security:
       - LocalSession: []
       - SecureSession: []
       responses:
+        '404':
+          $ref: '#/components/responses/Error404'
         '400':
           $ref: '#/components/responses/Error400'
         '500':
@@ -905,7 +898,7 @@ paths:
                     sku: WDG-001
                     productName: Widget
                     expectedQuantity: 1
-                    receivedQuantity: 1
+                    receivedQuantity: 0
                     remainingQuantity: 1
       parameters:
       - $ref: '#/components/parameters/Csrf'
@@ -941,8 +934,7 @@ paths:
       tags:
       - receivings
       summary: getReceiving
-      description: Header and items from a consistent database snapshot. OPERATOR and SUPERVISOR. Unknown query
-        parameters are rejected with 400.
+      description: "Header and items from a consistent database snapshot. OPERATOR and SUPERVISOR. Unknown query parameters are rejected with 400. Missing receiving: 404 RECEIVING_NOT_FOUND. Header/items/product projection use one read-only REPEATABLE READ transaction; receipt writes remain READ COMMITTED."
       security:
       - LocalSession: []
       - SecureSession: []
@@ -988,7 +980,7 @@ paths:
                     sku: WDG-001
                     productName: Widget
                     expectedQuantity: 1
-                    receivedQuantity: 1
+                    receivedQuantity: 0
                     remainingQuantity: 1
       parameters:
       - $ref: '#/components/parameters/Id'
@@ -1598,7 +1590,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          description: Trim and lowercase before storage and comparison. Includes deleted users in uniqueness.
+          description: Trim and lowercase before storage and comparison; length counts Unicode code points. Includes deleted users in uniqueness.
         password:
           type: string
           minLength: 1
@@ -1616,7 +1608,7 @@ components:
           type: string
           minLength: 1
           maxLength: 120
-          description: Trim before validation; length unit for non-password text remains an open question.
+          description: Trim before validation; count Unicode code points, not UTF-16 units, bytes or grapheme clusters.
         email: *id012
         password:
           type: string
@@ -1665,7 +1657,7 @@ components:
           type: string
           maxLength: 160
           default: ''
-          description: Trim before validation.
+          description: Trim before validation; count Unicode code points.
         items:
           type: array
           items:
@@ -1882,7 +1874,7 @@ components:
               message: Request could not be completed.
               requestId: example-request-id
     Error404:
-      description: Resource-specific not found; unspecified resource codes remain open.
+      description: "Resource-specific not found: USER_NOT_FOUND, PRODUCT_NOT_FOUND, RECEIVING_NOT_FOUND or RECEIVING_ITEM_NOT_FOUND according to the operation."
       content:
         application/json:
           schema:

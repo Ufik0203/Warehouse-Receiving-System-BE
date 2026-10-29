@@ -1,6 +1,6 @@
 # API Contract
 
-> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Health dan empat endpoint autentikasi Task 3 telah diimplementasikan; endpoint bisnis masih rencana. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
+> Sumber: [PROJECT_SPEC.md](source/PROJECT_SPEC.md). Health, empat endpoint autentikasi Task 3 dan core products/receivings/inventory Task 4 telah diimplementasikan; user management Task 5 masih rencana. Status per pemeriksaan ada di docs/testing.md (relatif terhadap root proyek).
 
 Sumber utama kontrak bersama adalah dokumen ini dalam repository backend. Frontend menyimpan replika byte-identik; prosedur dan pemeriksaan sinkronisasi ada di [api-sync.md](api-sync.md). Perubahan semantik harus ditetapkan di backend terlebih dahulu.
 
@@ -432,8 +432,33 @@ Codex harus menghasilkan OpenAPI yang mencakup:
 - OpenAPI menggunakan server `/` dan path bisnis penuh `/api/v1/...` agar `/health/live` dan `/health/ready` tetap di luar base path bisnis.
 - Cookie local `wrs.sid` atau HTTPS `__Host-wrs.sid` merupakan alternatif. Login membutuhkan session cookie anonymous dari bootstrap, bukan identitas yang sudah login.
 - Seluruh mutation memerlukan Content-Type application/json dan trusted Origin atau fallback Referer; logout dan DELETE tidak mempunyai request body. Header Content-Type reserved di OpenAPI sehingga ketentuan ini dinyatakan dalam description.
-- Normalisasi trim/lowercase email, trim/uppercase SKU dan UUID lowercase dijalankan sebelum validasi domain yang relevan. Batas string nama/reference dinyatakan terhadap hasil trim; unit runtime panjang teks selain password masih pertanyaan terbuka. Password tegas dihitung Unicode code point; min 12 untuk create, min 1 untuk login.
+- Normalisasi trim/lowercase email, trim/uppercase SKU dan UUID lowercase dijalankan sebelum validasi domain yang relevan. Batas string nama/reference dinyatakan terhadap hasil trim; panjang teks dihitung dalam Unicode code point setelah normalisasi field existing, bukan UTF-16 code unit, byte atau grapheme cluster. Password tegas dihitung Unicode code point; min 12 untuk create, min 1 untuk login.
 - Property uniqueness pada array item, keberadaan produk, membership item, remaining quantity, role authorization dan transaksi harus ditegakkan backend. Schema OpenAPI saja tidak dapat membuktikannya.
 - Detail receiving memakai snapshot konsisten. Replay mengembalikan immutable ReceiptDto, termasuk urutan items deterministik, bukan snapshot current receiving.
-- Nama kode 404 user/produk dan pemetaan produk tidak tersedia saat create receiving belum ditetapkan sumber. OpenAPI mempertahankan error schema bersama dan resource-specific description; tidak mengarang kode baru. Lihat R-10 pada spec-review.md sebelum implementasi endpoint terkait.
+- R-10 ditetapkan sebagai desain teknis persiapan Task 4 pada tabel di bawah; bukan klaim endpoint bisnis telah diimplementasikan.
 - Shared responses mencantumkan kategori error umum; tidak menetapkan precedence bila beberapa kondisi gagal bersamaan. Semua response auth, termasuk error, menggunakan Cache-Control: no-store.
+
+
+## Keputusan kontrak persiapan Task 4
+
+### R-10: resource tidak ditemukan
+
+| Endpoint (base /api/v1) | Kondisi setelah security dan validasi sintaks | Status/code |
+| --- | --- | --- |
+| GET /users/:id, PATCH /users/:id, DELETE /users/:id | UUID valid, user tidak ada | 404 USER_NOT_FOUND |
+| GET /products/:id | UUID valid, produk tidak ada | 404 PRODUCT_NOT_FOUND |
+| POST /receivings | Satu atau beberapa productId valid tetapi tidak ada | 404 PRODUCT_NOT_FOUND, tanpa write |
+| GET /receivings/:id, POST /receivings/:id/receipts | Receiving tidak ada | 404 RECEIVING_NOT_FOUND |
+| POST /receivings/:id/receipts | Item tidak ada dalam receiving sesuai alur receipt existing | 404 RECEIVING_ITEM_NOT_FOUND |
+
+Produk tersedia berarti row Product ada. Tidak menambah isActive, soft delete, status availability atau syarat stok produk. UUID/quantity/string invalid atau duplicate productId tetap 400 VALIDATION_ERROR sebelum lookup domain; DB failure tetap 503. Semua produk diperiksa pada transaction client create receiving sebelum insert parent/item; respons tidak menjanjikan daftar ID hilang. Security tetap mendahului lookup domain. Jika payload salah sekaligus referensi hilang, 400 menang; payload valid dengan referensi hilang menghasilkan 404 tanpa perubahan data. Tidak mengubah urutan idempotency/completed/remaining receipt.
+
+User soft-deleted masih ada: detail supervisor 200, PATCH mengikuti 409 USER_DELETED, DELETE ulang 204. Kode 404 di atas tidak menambah pemeriksaan keberadaan resource pada filter daftar/inventory. Error envelope tetap sama.
+
+### R-11: panjang teks
+
+Hitung Unicode code point setelah normalisasi yang sudah ditetapkan: name 1-120 setelah trim, reference 0-160 setelah trim (omitted menjadi string kosong), q 0-100 setelah trim, email maksimal 254 setelah trim/lowercase, SKU 1-40 setelah trim/uppercase dan regex ASCII existing. Password tetap tanpa trim/normalisasi, 1-128 pada login dan 12-128 pada create user. Tidak menambah normalisasi NFC/NFKC atau menghitung grapheme cluster. Enum pcs dan format UUID tetap. Semua batas numerik dipertahankan. Contoh: name berisi 120 karakter astral memenuhi batas 120; 121 ditolak. Combining mark dihitung terpisah.
+
+### R-13: detail receiving
+
+GET /receivings/:id membentuk seluruh ReceivingDetailDto pada transaksi baca REPEATABLE READ dengan transaction client yang sama untuk header, items dan product projection. Snapshot konsisten sejak statement data pertama, tidak menjamin kondisi terbaru ketika respons tiba. Tidak memakai row lock atau Redis untuk read detail. POST /receivings membentuk hasil detail melalui transaction client create yang sama dan mengirim respons hanya setelah commit. Receipt mutation tetap READ COMMITTED dengan row lock dan mengembalikan ReceiptDto historis immutable.

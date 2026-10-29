@@ -1,6 +1,6 @@
 # Warehouse Receiving System — Backend
 
-Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Endpoint bisnis belum diimplementasikan.
+Repository backend mandiri: Node.js 24.12.0, npm 11.6.2, Express 5, TypeScript strict, Prisma ORM 7, PostgreSQL 17 dan Redis 8. Task 3 autentikasi/security sudah diimplementasikan. Endpoint tersedia: `GET /health/live`, `GET /health/ready`, `GET /api/v1/auth/csrf-token`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, dan `POST /api/v1/auth/logout`. Task 4 core receiving tersedia: GET/POST /api/v1/products, GET /api/v1/products/:id, GET/POST /api/v1/receivings, GET /api/v1/receivings/:id, POST /api/v1/receivings/:id/receipts, GET /api/v1/inventory dan GET /api/v1/inventory/transactions. User management Task 5 belum diimplementasikan.
 
 Seluruh file untuk instalasi dan build berada dalam repository ini. Tidak memerlukan package.json, node_modules, konfigurasi atau lockfile dari folder induk/frontend. Folder ini boleh disalin sebagai root repository tersendiri. Dokumentasi mandiri tersedia pada docs/; provenance dan arsip lokal mempertahankan dokumen proyek asal. Tidak perlu mengakses folder induk untuk membaca spesifikasi atau menjalankan command fondasi.
 
@@ -100,3 +100,25 @@ REDIS_NAMESPACE default wrs; gunakan namespace wrs:test:<identitas> untuk tes. T
 Untuk auth integration, env terisolasi harus mempunyai database _test, REDIS_NAMESPACE wrs:test:..., RUN_FOUNDATION_INTEGRATION=true serta kedua credential seed. Jalankan deploy, seed dan npm run test:integration pada database verifikasi khusus. Jangan menjalankan verify:database ulang pada schema yang sudah terisi. Suite auth menggunakan namespace unik per test, tidak FLUSHALL. Vitest dijalankan serial antar-file karena fixture akun fondasi dipakai bersama.
 
 Bukti Task 3 ada di [testing](docs/testing.md#bukti-aktual-task-3). Kontrak backend diperbarui metadata implementasinya; replika frontend dan contract-version.json perlu disinkronkan manual sesuai [api-sync](docs/api-sync.md). Tidak ada endpoint bisnis atau perubahan frontend pada Task 3.
+
+
+## Core receiving Task 4
+
+Kedua role dapat membaca produk/stok/history serta membuat/membaca/menerima receiving; hanya supervisor dapat membuat produk. Semua endpoint memakai session, current-user reload dan shared user limiter; mutation juga CSRF/JSON/trusted Origin. Products create sekaligus membuat balance nol. Create receiving tidak mengubah stok. Reference/name/q mengikuti code-point boundaries dan normalisasi kontrak.
+
+Untuk receipt, kirim Idempotency-Key UUID dan body items berisi receivingItemId/quantity delta positif. Pertahankan key dan payload ketika respons hilang atau menerima retry-required; replay operasi identik mengembalikan receipt asli (200, Idempotency-Replayed true), operasi baru 201/false. Payload/actor berbeda dengan key sama conflict 409. Tidak ada manual complete/cancel/adjustment. Jangan mengirim total stock/received/status dari client.
+
+Detail receiving dibaca melalui read-only REPEATABLE READ; receipt menggunakan READ COMMITTED dengan parent/item row lock. Counter, receipt, ledger, balance dan status commit atomik. Inventory quantity adalah decimal string. Semua SQL constraints/migration Task 2 tetap; tidak ada dependency atau schema baru.
+
+Untuk mengulang verifikasi, sediakan env tes khusus sesuai template (DB _test, namespace wrs:test:..., seed credentials lokal). Pada eksekusi ini dipakai env/.env.task4 yang diabaikan; bukan file untuk disalin sebagai credential publik:
+
+```powershell
+$env:BACKEND_ENV_FILE = (Resolve-Path 'env/.env.task4').Path
+npm run test:unit
+npm run test:integration
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Laporan aktual ada pada [testing Task 4](docs/testing.md#bukti-aktual-task-4). Frontend/Task 5/Task 6 belum dikerjakan; sumber kontrak backend perlu disalin manual ke frontend sesuai api-sync.md.

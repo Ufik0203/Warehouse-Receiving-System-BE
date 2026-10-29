@@ -3,12 +3,12 @@
   "scope": "Static documentation only; this command does not run application/runtime tests; see testing.md for Task 3 evidence",
   "status": "PASS",
   "requirementIds": 87,
-  "activeMarkdownFiles": 13,
-  "localLinks": 61,
+  "activeMarkdownFiles": 14,
+  "localLinks": 69,
   "archivedFilesVerified": 39,
   "contractHashes": {
-    "api-contract.md": "142d353ffc2c2e653fed4e35aacebb32b5b862120d3586252705632dde96a043",
-    "openapi.yaml": "d93cbd3d46965a2c1c104a2b7f42a02c5fab690b1a3370bfb297c9274d1e3f3b"
+    "api-contract.md": "086da6cabdadeeb8506a90f8e3a9f909a579469b9e6c0ebf35452d3d27ebda4b",
+    "openapi.yaml": "d2d843b2ff4c9731b6fd6883c1b99bd1b895195b47b001748ea856febeabc4d1"
   },
   "backendArtifactCompared": false,
   "apiOperations": 20,
